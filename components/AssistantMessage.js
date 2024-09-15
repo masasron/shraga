@@ -23,7 +23,7 @@ function functionCallsToCodeString(functionCalls) {
 function CodeExecutionWidget(props) {
     const { readFile } = useContext(GlobalContext);
     const messageCodeAndToolOutput = props.messageCodeAndToolOutput;
-    return <div className="mx-auto w-full max-w-[80vh] max-h-[90vh] overflow-y-auto">
+    return <div className="mx-auto w-full">
         <div className="mb-3 text-sm w-full overflow-hidden whitespace-break-spaces">
             {messageCodeAndToolOutput.map((item, i) => <div className="flex flex-col" key={i}>
                 <div>

@@ -31,7 +31,7 @@ function InteractiveChart(props) {
         }
     }, [chartContainer]);
 
-    return <div>
+    return <div className="max-h-[90vh] overflow-y-auto">
         <div ref={chartContainer}></div>
     </div>
 }
