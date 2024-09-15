@@ -3,7 +3,4 @@ dist
 .next
 .vscode
 .DS_Store
-public/pyodide/*.whl
-public/pyodide/*.zip
-public/pyodide/*.tar
-public/pyodide/*.metadata
+public/pyodide/*
