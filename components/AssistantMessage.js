@@ -24,7 +24,7 @@ function CodeExecutionWidget(props) {
     const { readFile } = useContext(GlobalContext);
     const messageCodeAndToolOutput = props.messageCodeAndToolOutput;
     return <div className="mx-auto w-full">
-        <div className="mb-3 text-sm w-full overflow-hidden whitespace-break-spaces">
+        <div className="mb-3 text-sm w-full max-h-[90vh] overflow-hidden whitespace-break-spaces">
             {messageCodeAndToolOutput.map((item, i) => <div className="flex flex-col" key={i}>
                 <div>
                     <h1 className="p-2 text-slate-600">Python Code</h1>
@@ -103,7 +103,28 @@ function AssistantMessage(props) {
     }
 
     const handleDownload = (blobUrl, src) => {
-        const filenameFromSrc = src.split("/").pop();
+        const filenameFromSrc = src.split("/").pop().toLowerCase();
+        console.log("handle download of", filenameFromSrc);
+        // if .svg convert to png.
+        if (filenameFromSrc.endsWith(".svg")) {
+            console.log(".svg detected, converting to png.");
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+            img.onload = function () {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                const pngUrl = canvas.toDataURL("image/png");
+                const a = document.createElement("a");
+                a.href = pngUrl;
+                a.download = filenameFromSrc.replaceAll(".svg", ".png");
+                a.click();
+            }
+            img.src = blobUrl;
+            return;
+        }
+
         const a = document.createElement("a");
         a.href = blobUrl;
         a.download = filenameFromSrc;
