@@ -6,6 +6,7 @@ import { Download, MousePointerClickIcon, SquareTerminal, CopyIcon, CheckIcon } 
 
 import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/cjs/styles/prism";
+import { setUserClipboard } from "utils/common";
 
 function functionCallsToCodeString(functionCalls) {
     let filteredFunctionCalls = functionCalls.filter(call => call.function && call.function.name === "runPython");
@@ -22,14 +23,28 @@ function functionCallsToCodeString(functionCalls) {
 
 function CodeExecutionWidget(props) {
     const { readFile } = useContext(GlobalContext);
+    const [didCopy, setDidCopy] = useState(false);
     const messageCodeAndToolOutput = props.messageCodeAndToolOutput;
+
+    function handleCopy(code) {
+        setUserClipboard(code, () => {
+            setDidCopy(true);
+            setTimeout(function () {
+                setDidCopy(false);
+            }, 1000);
+        });
+    }
+
     return <div className="mx-auto w-full">
-        <div className="mb-3 text-sm w-full max-h-[90vh] overflow-hidden whitespace-break-spaces">
+        <div className="mb-3 text-sm w-full max-h-[90vh] overflow-y-auto whitespace-break-spaces">
             {messageCodeAndToolOutput.map((item, i) => <div className="flex flex-col" key={i}>
                 <div>
                     <h1 className="p-2 text-slate-600">Python Code</h1>
-                    <div className="bg-white overflow-x-auto">
+                    <div className="bg-white relative overflow-x-auto">
                         <SyntaxHighlighter language="python" style={oneLight}>{item.code}</SyntaxHighlighter>
+                        <button className="absolute top-2 right-2 p-2" onClick={() => handleCopy(item.code)}>
+                            {didCopy ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
+                        </button>
                     </div>
                 </div>
                 {item.output && <div className="h-full flex flex-col">
@@ -132,11 +147,12 @@ function AssistantMessage(props) {
     }
 
     function handleCopy() {
-        navigator.clipboard.writeText(props.content);
-        setDidCopy(true);
-        setTimeout(function () {
-            setDidCopy(false);
-        }, 1000);
+        setUserClipboard(props.content, () => {
+            setDidCopy(true);
+            setTimeout(function () {
+                setDidCopy(false);
+            }, 1000);
+        });
     }
 
     return <>

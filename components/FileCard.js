@@ -94,6 +94,18 @@ export default function FileCard(props) {
     const fileType = file.type ? file.type : getMimeType(file.name);
     const FileIcon = FileIconByType(fileType);
 
+    let fileSize = null;
+    if (file.size) {
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        let size = file.size;
+        let unitIndex = 0;
+        while (size > 1024 && unitIndex < units.length) {
+            size = size / 1024;
+            unitIndex++;
+        }
+        fileSize = `${size.toFixed(2)} ${units[unitIndex]}`;
+    }
+
     return <div className='bg-white relative flex gap-2 items-center p-2 rounded-lg'>
         <div className='p-2 rounded-lg bg-purple-400'>
             {file.status === 'loading' && <img src="/loader.svg" width="26" />}
@@ -101,7 +113,10 @@ export default function FileCard(props) {
         </div>
         <div className='flex flex-col text-[12px]'>
             <label title={file.name} className='overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>{file.name}</label>
-            <label title={file.type_label} className='text-gray-400 font-bold uppercase overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>{file.type_label}</label>
+            <label title={file.type_label} className='text-gray-400 flex gap-1 font-bold uppercase overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>
+                {fileSize && <span>{fileSize}</span>}
+                {!fileSize && <span>{file.type_label}</span>}
+            </label>
         </div>
         {props.canDelete !== false && <div className='flex flex-col'>
             <div className='rounded-full cursor-pointer bg-gray-300 p-[2px] border-gray-100 items-center border-[1px]'>
