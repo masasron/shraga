@@ -13,6 +13,7 @@ import LLMStreamingHandler from 'utils/LLMStreamingHandler';
 import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
 import html2canvas from "html2canvas";
+import Tooltip from "components/Tooltip";
 
 function Index() {
     const [files, setFiles] = useState([]);
@@ -269,15 +270,21 @@ function Index() {
                         {MODELS.map(model => <option key={model.value} value={model.value}>{model.name}</option>)}
                     </select>
                     <div className="flex-1" />
-                    <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => [setDrawerComponent(<UserSettings />), setDrawerIsOpen(true)]}>
-                        <Settings2 size={20} />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={handleStartNewChat}>
-                        <Edit size={20} />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={exportConversationScreenshot}>
-                        <Download size={20} />
-                    </button>
+                    {messages.length > 1 && <Tooltip content="Save conversation" position="bottom">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={exportConversationScreenshot}>
+                            <Download size={20} />
+                        </button>
+                    </Tooltip>}
+                    <Tooltip content="Settings" position="bottom">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => [setDrawerComponent(<UserSettings />), setDrawerIsOpen(true)]}>
+                            <Settings2 size={20} />
+                        </button>
+                    </Tooltip>
+                    <Tooltip content="New chat" position="bottom-right">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={handleStartNewChat}>
+                            <Edit size={20} />
+                        </button>
+                    </Tooltip>
                 </>}
                 footer={<ChatContainer><ChatTextField onStop={handleStop} loading={loading} files={files} onFiles={handleFiles} onFileDelete={handleFileDelete} onMessage={handleMessage} placeholder={userSettings?.name ? `Hi ${userSettings.name}, how can I help?` : "Ask anything"} /></ChatContainer>}>
                 <ChatContainer>

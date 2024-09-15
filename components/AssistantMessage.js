@@ -7,6 +7,7 @@ import { Download, MousePointerClickIcon, SquareTerminal, CopyIcon, CheckIcon } 
 import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneLight } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { setUserClipboard } from "utils/common";
+import Tooltip from "components/Tooltip";
 
 function functionCallsToCodeString(functionCalls) {
     let filteredFunctionCalls = functionCalls.filter(call => call.function && call.function.name === "runPython");
@@ -36,7 +37,7 @@ function CodeExecutionWidget(props) {
     }
 
     return <div className="mx-auto w-full">
-        <div className="mb-3 text-sm w-full max-h-[90vh] overflow-y-auto whitespace-break-spaces">
+        <div className="mb-3 text-sm w-full mx-auto max-w-[90vh] max-h-[90vh] overflow-y-auto whitespace-break-spaces">
             {messageCodeAndToolOutput.map((item, i) => <div className="flex flex-col" key={i}>
                 <div>
                     <h1 className="p-2 text-slate-600">Python Code</h1>
@@ -184,8 +185,12 @@ function AssistantMessage(props) {
                             return <p className="chart-preview border-[1px] overflow-hidden border-gray-200 rounded-lg gap-1 flex flex-col">
                                 <span className="flex p-2 gap-2">
                                     <span className="flex-1" />
-                                    <button className="hover:bg-gray-100 p-1 rounded-lg" onClick={() => handleDownload(blobUrl, src)}><Download size={18} /></button>
-                                    <button className="hover:bg-gray-100 p-1 rounded-lg hidden md:block" onClick={onInteractiveChartRequest}><MousePointerClickIcon size={18} /></button>
+                                    <Tooltip content="Download" position="bottom">
+                                        <button className="hover:bg-gray-100 p-1 rounded-lg" onClick={() => handleDownload(blobUrl, src)}><Download size={18} /></button>
+                                    </Tooltip>
+                                    <Tooltip content="Open chart" position="bottom-right">
+                                        <button className="hover:bg-gray-100 p-1 rounded-lg hidden md:block" onClick={onInteractiveChartRequest}><MousePointerClickIcon size={18} /></button>
+                                    </Tooltip>
                                 </span>
                                 <span className="block items-center justify-center p-2">
                                     <img className="max-w-[100%] w-auto mx-auto" src={blobUrl} {...props} />
@@ -197,8 +202,12 @@ function AssistantMessage(props) {
                 }}
             />
             <div className="flex gap-2">
-                <a className="p-1 rounded-md opacity-50 hover:opacity-100" onClick={handleCopy}>{didCopy ? <CheckIcon size={16} /> : <CopyIcon size={14} />}</a>
-                {messageCodeAndToolOutput.length > 0 && <a className="p-1 rounded-md opacity-50 hover:opacity-100" onClick={() => openInDrawer(<CodeExecutionWidget messageCodeAndToolOutput={messageCodeAndToolOutput} />)}><SquareTerminal size={14} /></a>}
+                <Tooltip content="Copy" position="top-left">
+                    <button className="p-1 rounded-md transition-opacity opacity-50 hover:opacity-100" onClick={handleCopy}>{didCopy ? <CheckIcon size={16} /> : <CopyIcon size={14} />}</button>
+                </Tooltip>
+                {messageCodeAndToolOutput.length > 0 && <Tooltip content="View source" position="top-left">
+                    <button className="p-1 rounded-md transition-opacity opacity-50 hover:opacity-100" onClick={() => openInDrawer(<CodeExecutionWidget messageCodeAndToolOutput={messageCodeAndToolOutput} />)}><SquareTerminal size={14} /></button>
+                </Tooltip>}
             </div>
         </div>
     </>
