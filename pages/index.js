@@ -1,17 +1,18 @@
 import { SSE } from "sse.js";
 import GlobalContext from 'GlobalContext';
 import getMimeType from 'utils/getMimeType';
-import { Settings2, Edit } from "lucide-react";
 import UserMessage from "components/UserMessage";
 import LoadingText from 'components/LoadingText';
 import UserSettings from "components/UserSettings";
 import ChatTextField from 'components/ChatTextField';
 import { useContext, useState, useEffect } from 'react';
+import { Settings2, Edit, Download } from "lucide-react";
 import AssistantMessage from "components/AssistantMessage";
 import InteractiveChart from "components/InteractiveChart";
 import LLMStreamingHandler from 'utils/LLMStreamingHandler';
 import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
+import html2canvas from "html2canvas";
 
 function Index() {
     const [files, setFiles] = useState([]);
@@ -70,6 +71,30 @@ function Index() {
             window.removeEventListener("stream-tool-calls-done", handleStreamToolCallsDone);
         }
     }, []);
+
+    function exportConversationScreenshot() {
+        const container = document.getElementById("messages_container");
+        if (!container) return;
+        const fonts = document.fonts;
+        html2canvas(container, {
+            scale: 3, // Increase resolution
+            scrollX: 0, // Ensure X scroll position is 0
+            scrollY: 0, // Ensure Y scroll position is 0
+            y: 0,      // Start capturing from the top
+            height: container.scrollHeight, // Full height of the content
+            windowHeight: container.scrollHeight + container.offsetHeight, // Capture everything, accounting for the container height
+            onclone: (clonedDocument) => {
+                fonts.forEach(font => clonedDocument.fonts.add(font));
+                clonedDocument.getElementById("messages_container").scrollTop = 0; // Make sure the cloned container starts from the top
+            }
+        }).then(canvas => {
+            const dataURL = canvas.toDataURL("image/png", 1.0);
+            const a = document.createElement("a");
+            a.href = dataURL;
+            a.download = "lemon-conversation.png";
+            a.click();
+        });
+    }
 
     function scrollDown() {
         setTimeout(() => {
@@ -231,7 +256,7 @@ function Index() {
 
     return <>
         {(isLoading || messages.length === 0) && <div className="fixed top-0 left-0 w-full h-full">
-            <div className="flex h-full w-full items-center justify-center">
+            <div className="flex h-full items-center justify-center">
                 <div className="spin-and-scale">
                     <LoadingText><img src="/lemon-top.svg" width="64" /></LoadingText>
                 </div>
@@ -249,6 +274,9 @@ function Index() {
                     </button>
                     <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={handleStartNewChat}>
                         <Edit size={20} />
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={exportConversationScreenshot}>
+                        <Download size={20} />
                     </button>
                 </>}
                 footer={<ChatContainer><ChatTextField onStop={handleStop} loading={loading} files={files} onFiles={handleFiles} onFileDelete={handleFileDelete} onMessage={handleMessage} placeholder={userSettings?.name ? `Hi ${userSettings.name}, how can I help?` : "Ask anything"} /></ChatContainer>}>

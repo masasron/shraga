@@ -1,11 +1,7 @@
-import cn from "utils/cn";
-import { useState } from "react";
 
 export default function ChatLayout(props) {
-    const [hideScroll, setHideScroll] = useState(true);
-
-    return <div className={cn("flex flex-col h-screen", hideScroll ? "overflow-hidden" : "")}>
-        <header className="sticky z-10 flex shadow-white shadow-lg items-center gap-2 top-0 bg-white p-4 slide-in-top" onAnimationEnd={() => setHideScroll(false)}>
+    return <div className="flex flex-col h-full overflow-hidden">
+        <header className="sticky z-10 flex shadow-white shadow-lg items-center gap-2 top-0 bg-white p-4 slide-in-top">
             {props.header}
         </header>
         <main id="messages_container" className="flex-grow overflow-y-auto p-4">

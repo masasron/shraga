@@ -130,7 +130,7 @@ function AssistantMessage(props) {
                 canvas.width = img.width;
                 canvas.height = img.height;
                 ctx.drawImage(img, 0, 0);
-                const pngUrl = canvas.toDataURL("image/png");
+                const pngUrl = canvas.toDataURL("image/png", 1.0);
                 const a = document.createElement("a");
                 a.href = pngUrl;
                 a.download = filenameFromSrc.replaceAll(".svg", ".png");

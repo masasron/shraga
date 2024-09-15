@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  img {
+    @apply inline-block;
+  }
+}
+
 html,
 body,
 #__next {
@@ -66,7 +72,7 @@ body,
 }
 
 .slide-in-bottom {
-  animation-delay: 250ms;
+  animation-delay: 500ms;
   animation: slideInFromBottom 0.5s ease-out forwards;
 }
 
