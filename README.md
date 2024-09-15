@@ -2,7 +2,7 @@
 
 # Lemon
 
-Today, users must choose between running weaker models locally or sending their data to the cloud. **Lemon** offers a middle ground by enabling users to access state-of-the-art models while keeping their data private. **Lemon** is a front-end web application designed to help users perform data analysis, visualization, and basic programming tasks using Pyodide—a Python runtime for the web—along with large language models (currently supporting ChatGPT).
+Today, users must choose between running weaker models locally or sending their data to the cloud. **Lemon** offers a middle ground by enabling users to access state-of-the-art models while keeping their files private. **Lemon** is a front-end web application designed to help users perform data analysis, visualization, and basic programming tasks using Pyodide—a Python runtime for the web—along with large language models (currently supporting ChatGPT).
 
 ## Installation Instructions
 
