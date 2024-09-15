@@ -17,6 +17,59 @@ body,
     Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
 }
 
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spinAndScale {
+  0% {
+    opacity: 0;
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(0.8) rotate(90deg);
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+.spin-and-scale {
+  animation: spinAndScale 2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.slide-in-top {
+  animation-delay: 250ms;
+  animation: slideInFromTop 0.5s ease-out forwards;
+}
+
+.slide-in-bottom {
+  animation-delay: 250ms;
+  animation: slideInFromBottom 0.5s ease-out forwards;
+}
+
 .attachment-icon {
   transition: all 0.3s;
   &:hover {

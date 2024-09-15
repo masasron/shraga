@@ -19,8 +19,8 @@ function Index() {
     const [loading, setLoading] = useState(false);
     const [streamedMessage, setStreamedMessage] = useState("");
     const [isToolCallsStreaming, setIsToolCallsStreaming] = useState(false);
-    const { isLoading, runPython, writeFile, deleteFile, pyodide, userSettings,
-        setDrawerComponent, setDrawerIsOpen, setUserSettings
+    const { isLoading, runPython, writeFile, deleteFile, pyodide,
+        userSettings, setDrawerComponent, setDrawerIsOpen, setUserSettings
     } = useContext(GlobalContext);
 
     useEffect(function () {
@@ -230,9 +230,11 @@ function Index() {
     }
 
     return <>
-        {isLoading && <div className="flex items-center justify-center h-screen">
-            <div className="relative">
-                <LoadingText><img src="/lemon-top.svg" width="64" /></LoadingText>
+        {(isLoading || messages.length === 0) && <div className="fixed top-0 left-0 w-full h-full">
+            <div className="flex h-full w-full items-center justify-center">
+                <div className="spin-and-scale">
+                    <LoadingText><img src="/lemon-top.svg" width="64" /></LoadingText>
+                </div>
             </div>
         </div>}
         {!isLoading && <>
@@ -250,9 +252,6 @@ function Index() {
                     </button>
                 </>}
                 footer={<ChatContainer><ChatTextField onStop={handleStop} loading={loading} files={files} onFiles={handleFiles} onFileDelete={handleFileDelete} onMessage={handleMessage} placeholder={userSettings?.name ? `Hi ${userSettings.name}, how can I help?` : "Ask anything"} /></ChatContainer>}>
-                {messages.length === 0 && <div className="flex flex-1 items-center h-[100%] justify-center">
-                    <img src="/lemon-top.svg" width="64" />
-                </div>}
                 <ChatContainer>
                     {messages.map((message, i) => {
                         return ((message.role === "assistant" || message.role === "user") && message.content) ? <div key={i} className={`flex gap-2 ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
