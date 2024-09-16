@@ -54,7 +54,7 @@ export const GlobalContextProvider = ({ children }) => {
                 document.pyodideMplTarget.style = "position:fixed;top:0;left:0;width:0px;height:0px;opacity:0;overflow:hidden;z-index:-1;";
                 document.body.appendChild(document.pyodideMplTarget);
 
-                await pyodideInstance.loadPackage(['matplotlib', 'pandas', 'pillow', 'sympy', 'micropip']);
+                await pyodideInstance.loadPackage(['matplotlib', 'pandas', 'pillow', 'micropip']);
 
                 setPyodide(pyodideInstance);
                 setIsLoading(false);

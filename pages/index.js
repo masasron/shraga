@@ -1,4 +1,6 @@
 import { SSE } from "sse.js";
+import html2canvas from "html2canvas";
+import Tooltip from "components/Tooltip";
 import GlobalContext from 'GlobalContext';
 import getMimeType from 'utils/getMimeType';
 import UserMessage from "components/UserMessage";
@@ -12,8 +14,7 @@ import InteractiveChart from "components/InteractiveChart";
 import LLMStreamingHandler from 'utils/LLMStreamingHandler';
 import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
-import html2canvas from "html2canvas";
-import Tooltip from "components/Tooltip";
+
 
 function Index() {
     const [files, setFiles] = useState([]);
