@@ -15,7 +15,6 @@ import LLMStreamingHandler from 'utils/LLMStreamingHandler';
 import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
 
-
 function Index() {
     const [files, setFiles] = useState([]);
     const [messages, setMessages] = useState([]);
@@ -122,6 +121,16 @@ function Index() {
     async function runTool(toolName, args) {
         console.log('trying to run tool', toolName, args);
 
+        if (toolName === "micropip_install") {
+            const packageName = args.name;
+            try {
+                await pyodide.runPythonAsync(`import micropip; micropip.install('${packageName}')`);
+                return "success";
+            } catch (err) {
+                return "This package does not exist or could not be installed";
+            }
+        }
+
         if (toolName === "python") {
             try {
                 return await runPython(args.code.trim());
@@ -140,7 +149,7 @@ function Index() {
             }
         }
 
-        return { error: "Tool not found" };
+        return "Tool not found";
     }
 
     function processMessages() {
@@ -296,18 +305,18 @@ function Index() {
                         </div> : null;
                     })}
 
+                    {streamedMessage && <div className="flex gap-2 justify-start">
+                        <div className="py-2 px-4 rounded-full text-black bg-white whitespace-break-spaces">
+                            {streamedMessage} <div className="inline-block w-3 h-3 rounded-full bg-black" />
+                        </div>
+                    </div>}
+
                     {!isToolCallsStreaming && !streamedMessage && messages.length > 0 && (messages[messages.length - 1].role === 'tool' || messages[messages.length - 1].role === 'assistant' && messages[messages.length - 1].tool_calls) && <div className="flex gap-2 justify-start">
                         <LoadingText>Executing</LoadingText>
                     </div>}
 
                     {isToolCallsStreaming && <div className="flex gap-2 justify-start">
                         <LoadingText>Writing Python</LoadingText>
-                    </div>}
-
-                    {streamedMessage && <div className="flex gap-2 justify-start">
-                        <div className="py-2 px-4 rounded-full text-black bg-white whitespace-break-spaces">
-                            {streamedMessage} <div className="inline-block w-3 h-3 rounded-full bg-black" />
-                        </div>
                     </div>}
 
                     {messages.length > 0 && <div className="h-[100px]" />}

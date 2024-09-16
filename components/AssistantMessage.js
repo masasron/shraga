@@ -1,99 +1,21 @@
 import remarkGfm from "remark-gfm";
 import Tooltip from "components/Tooltip";
-import GlobalContext from "GlobalContext";
+import GlobalContext from 'GlobalContext';
 import { useContext, useState } from "react";
 import { setUserClipboard } from "utils/common";
+import parseToolsHistory from "utils/parseToolsHistory";
+import CodeExecutionHistory from "components/CodeExecutionHistory";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
-import { oneLight } from "react-syntax-highlighter/dist/cjs/styles/prism";
-import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { Download, MousePointerClickIcon, SquareTerminal, CopyIcon, CheckIcon } from "lucide-react";
-
-function functionCallsToCodeString(functionCalls) {
-    let filteredFunctionCalls = functionCalls.filter(call => call.function && call.function.name === "python");
-    return filteredFunctionCalls.reduce((acc, call) => {
-        try {
-            let { code } = JSON.parse(call.function.arguments);
-            return acc + code;
-        } catch (err) {
-            console.warn("Error parsing function call", call, err);
-            return acc;
-        }
-    }, "");
-}
-
-function CodeExecutionWidget(props) {
-    const { readFile } = useContext(GlobalContext);
-    const [didCopy, setDidCopy] = useState(false);
-    const messageCodeAndToolOutput = props.messageCodeAndToolOutput;
-
-    function handleCopy(code) {
-        setUserClipboard(code, () => {
-            setDidCopy(true);
-            setTimeout(function () {
-                setDidCopy(false);
-            }, 1000);
-        });
-    }
-
-    return <div className="mx-auto w-full">
-        <div className="mb-3 text-sm w-full mx-auto max-w-[100vh] max-h-[90vh] overflow-y-auto whitespace-break-spaces">
-            {messageCodeAndToolOutput.map((item, i) => <div className="flex flex-col" key={i}>
-                <div>
-                    <h1 className="p-2 text-slate-600">Python Code</h1>
-                    <div className="bg-white relative overflow-x-auto">
-                        <SyntaxHighlighter language="python" style={oneLight}>{item.code}</SyntaxHighlighter>
-                        <button className="absolute top-2 right-2 p-2" onClick={() => handleCopy(item.code)}>
-                            {didCopy ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
-                        </button>
-                    </div>
-                </div>
-                {item.output && <div className="h-full flex flex-col">
-                    <h1 className="p-2 text-slate-600">Result</h1>
-                    <div className="whitespace-pre flex-1 text-[12px] bg-black text-white font-mono p-2 overflow-x-auto">
-                        {item.output}
-                        {item.output.startsWith("/data/") && item.output.match(/\.(svg|jpg|png|jpeg)$/) && <div className="p-2">
-                            <img src={readFile(item.output)} className="max-w-[100%] w-auto mx-auto" />
-                        </div>}
-                    </div>
-                </div>}
-            </div>)}
-        </div>
-    </div>
-}
 
 function AssistantMessage(props) {
     const [didCopy, setDidCopy] = useState(false);
     const { readFile, openInDrawer } = useContext(GlobalContext);
 
     const messages = props.messages;
-    const messageIndex = props.messageIndex;
     const onInteractiveChartRequest = props.onInteractiveChartRequest;
 
-    const messageCodeAndToolOutput = [];
-
-    // find the closes previos message with role "user"
-    let userMessageIndex = messageIndex - 1;
-    while (userMessageIndex >= 0 && messages[userMessageIndex].role !== "user") {
-        userMessageIndex--;
-    }
-
-    // go over each message after messageIndex and check if it matches one of the following:
-    // 1. role == "assistant" and has tool_calls property.
-    // 2. role == "tool"
-    for (let i = userMessageIndex + 1; i < messageIndex; i++) {
-        let message = messages[i];
-        if ((message.role === "assistant" && message.tool_calls) || message.role === "tool") {
-            if (message.role === "assistant") {
-                messageCodeAndToolOutput.push({ code: functionCallsToCodeString(message.tool_calls) });
-            }
-            if (message.role === "tool") {
-                messageCodeAndToolOutput[messageCodeAndToolOutput.length - 1].output = message.content;
-            }
-        } else {
-            break;
-        }
-    }
-
+    const toolsHistory = parseToolsHistory(messages, props.messageIndex);
 
     const handleLinkClick = (e) => {
         e.preventDefault();
@@ -179,12 +101,12 @@ function AssistantMessage(props) {
                     }
                 }}
             />
-            <div className="flex gap-2">
-                <Tooltip content="Copy" position="top-left">
+            <div className="flex gap-2 pb-6">
+                <Tooltip content="Copy" position="bottom-left">
                     <button className="p-1 rounded-md transition-opacity opacity-50 hover:opacity-100" onClick={handleCopy}>{didCopy ? <CheckIcon size={16} /> : <CopyIcon size={14} />}</button>
                 </Tooltip>
-                {messageCodeAndToolOutput.length > 0 && <Tooltip content="View source" position="top-left">
-                    <button className="p-1 rounded-md transition-opacity opacity-50 hover:opacity-100" onClick={() => openInDrawer(<CodeExecutionWidget messageCodeAndToolOutput={messageCodeAndToolOutput} />)}><SquareTerminal size={14} /></button>
+                {toolsHistory.length > 0 && <Tooltip content="View source" position="bottom-left">
+                    <button className="p-1 rounded-md transition-opacity opacity-50 hover:opacity-100" onClick={() => openInDrawer(<CodeExecutionHistory toolsHistory={toolsHistory} />)}><SquareTerminal size={14} /></button>
                 </Tooltip>}
             </div>
         </div>
