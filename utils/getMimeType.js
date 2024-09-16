@@ -84,7 +84,6 @@ const mimeTypes = {
 function getMimeType(filePath) {
   let result = mime.getType(filePath);
   if (result) {
-    console.log("mime.getType result:", result);
     return result;
   }
   const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();

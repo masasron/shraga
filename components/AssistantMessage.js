@@ -1,16 +1,15 @@
 import remarkGfm from "remark-gfm";
+import Tooltip from "components/Tooltip";
 import GlobalContext from "GlobalContext";
 import { useContext, useState } from "react";
+import { setUserClipboard } from "utils/common";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+import { oneLight } from "react-syntax-highlighter/dist/cjs/styles/prism";
+import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { Download, MousePointerClickIcon, SquareTerminal, CopyIcon, CheckIcon } from "lucide-react";
 
-import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneLight } from "react-syntax-highlighter/dist/cjs/styles/prism";
-import { setUserClipboard } from "utils/common";
-import Tooltip from "components/Tooltip";
-
 function functionCallsToCodeString(functionCalls) {
-    let filteredFunctionCalls = functionCalls.filter(call => call.function && call.function.name === "runPython");
+    let filteredFunctionCalls = functionCalls.filter(call => call.function && call.function.name === "python");
     return filteredFunctionCalls.reduce((acc, call) => {
         try {
             let { code } = JSON.parse(call.function.arguments);
@@ -37,7 +36,7 @@ function CodeExecutionWidget(props) {
     }
 
     return <div className="mx-auto w-full">
-        <div className="mb-3 text-sm w-full mx-auto max-w-[90vh] max-h-[90vh] overflow-y-auto whitespace-break-spaces">
+        <div className="mb-3 text-sm w-full mx-auto max-w-[100vh] max-h-[90vh] overflow-y-auto whitespace-break-spaces">
             {messageCodeAndToolOutput.map((item, i) => <div className="flex flex-col" key={i}>
                 <div>
                     <h1 className="p-2 text-slate-600">Python Code</h1>
@@ -120,27 +119,6 @@ function AssistantMessage(props) {
 
     const handleDownload = (blobUrl, src) => {
         const filenameFromSrc = src.split("/").pop().toLowerCase();
-        console.log("handle download of", filenameFromSrc);
-        // if .svg convert to png.
-        if (filenameFromSrc.endsWith(".svg")) {
-            console.log(".svg detected, converting to png.");
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d");
-            const img = new Image();
-            img.onload = function () {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                const pngUrl = canvas.toDataURL("image/png", 1.0);
-                const a = document.createElement("a");
-                a.href = pngUrl;
-                a.download = filenameFromSrc.replaceAll(".svg", ".png");
-                a.click();
-            }
-            img.src = blobUrl;
-            return;
-        }
-
         const a = document.createElement("a");
         a.href = blobUrl;
         a.download = filenameFromSrc;

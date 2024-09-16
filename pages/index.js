@@ -22,8 +22,7 @@ function Index() {
     const [streamedMessage, setStreamedMessage] = useState("");
     const [isToolCallsStreaming, setIsToolCallsStreaming] = useState(false);
     const { isLoading, runPython, writeFile, deleteFile, pyodide,
-        userSettings, setDrawerComponent, setDrawerIsOpen, setUserSettings
-    } = useContext(GlobalContext);
+        userSettings, setUserSettings, openInDrawer } = useContext(GlobalContext);
 
     useEffect(function () {
         if (pyodide) {
@@ -122,7 +121,7 @@ function Index() {
     async function runTool(toolName, args) {
         console.log('trying to run tool', toolName, args);
 
-        if (toolName === "runPython") {
+        if (toolName === "python") {
             try {
                 return await runPython(args.code.trim());
             } catch (err) {
@@ -134,7 +133,7 @@ function Index() {
                         error = "File " + error.split("File ")[1];
                     }
                     error = error.trim();
-                    return "PythonError: Traceback (most recent call last):\n" + error;
+                    return "PythonError: " + error;
                 }
                 return error;
             }
@@ -179,11 +178,10 @@ function Index() {
 
     function handleMessage(message) {
         if (userSettings.openai_api_key === "") {
-            // open user settings
-            setDrawerComponent(<UserSettings />);
-            setDrawerIsOpen(true);
+            openInDrawer(<UserSettings />);
             return false;
         }
+
         setFiles(uploaadedFiles => {
             if (uploaadedFiles.length === 0) return [];
             let newMessage = "<user files>\n";
@@ -236,8 +234,8 @@ function Index() {
         }
 
         let chartIndex = elements.indexOf(target);
-        setDrawerComponent(<InteractiveChart chartIndex={chartIndex} />);
-        setDrawerIsOpen(true);
+
+        openInDrawer(<InteractiveChart chartIndex={chartIndex} />);
     }
 
     function handleStartNewChat() {
@@ -276,7 +274,7 @@ function Index() {
                         </button>
                     </Tooltip>}
                     <Tooltip content="Settings" position="bottom">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => [setDrawerComponent(<UserSettings />), setDrawerIsOpen(true)]}>
+                        <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => openInDrawer(<UserSettings />)}>
                             <Settings2 size={20} />
                         </button>
                     </Tooltip>
@@ -290,7 +288,7 @@ function Index() {
                 <ChatContainer>
                     {messages.map((message, i) => {
                         return ((message.role === "assistant" || message.role === "user") && message.content) ? <div key={i} className={`flex gap-2 ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
-                            <div className={`py-2 px-4 overflow-x-auto rounded-xl ${message.role === 'user' ? 'whitespace-break-spaces bg-gray-100' : 'text-black w-full bg-white'}`}>
+                            <div className={`py-2 px-4 overflow-x-auto rounded-xl ${message.role === 'user' ? 'whitespace-break-spaces bg-gray-100 rounded-br-none' : 'text-black w-full bg-white'}`}>
                                 {message.role === 'assistant' && <AssistantMessage messageIndex={i} messages={messages} onInteractiveChartRequest={handleChartRendering} content={message.content} />}
                                 {message.role === 'user' && <UserMessage content={message.content} />}
                             </div>
@@ -310,6 +308,8 @@ function Index() {
                             {streamedMessage} <div className="inline-block w-3 h-3 rounded-full bg-black" />
                         </div>
                     </div>}
+
+                    {messages.length > 0 && <div className="h-[100px]" />}
                 </ChatContainer>
             </ChatLayout>
         </>

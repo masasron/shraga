@@ -1,11 +1,10 @@
-import getMimeType from 'utils/getMimeType';
-import { createContext, useState, useEffect } from 'react';
 import {
     Drawer,
     DrawerContent,
 } from "components/Drawer";
+import getMimeType from 'utils/getMimeType';
+import { createContext, useState, useEffect } from 'react';
 
-// Create the context
 const GlobalContext = createContext();
 
 export const GlobalContextProvider = ({ children }) => {
@@ -55,7 +54,7 @@ export const GlobalContextProvider = ({ children }) => {
                 document.pyodideMplTarget.style = "position:fixed;top:0;left:0;width:0px;height:0px;opacity:0;overflow:hidden;z-index:-1;";
                 document.body.appendChild(document.pyodideMplTarget);
 
-                await pyodideInstance.loadPackage(['matplotlib', 'pandas', 'pillow', 'sqlite3', 'wordcloud'/*'pyodide/pypdf-4.3.1-py3-none-any.whl'*/, /*'opencv-python'*/]);
+                await pyodideInstance.loadPackage(['matplotlib', 'pandas', 'pillow', 'sympy', 'micropip']);
 
                 setPyodide(pyodideInstance);
                 setIsLoading(false);
