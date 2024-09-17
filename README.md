@@ -1,10 +1,10 @@
 <img src="public/lemon-side.svg" alt="Lemon" width="64">
 
-# LemonPy
+# Lemon
 
-Today, users must choose between running weaker models locally or sending their data to the cloud. **LemonPy** offers a middle ground by enabling users to access state-of-the-art models while keeping their files private.
+Today, users must choose between running weaker models locally or sending their data to the cloud. **Lemon** offers a middle ground by enabling users to access state-of-the-art models while keeping their files private.
 
-**LemonPy** is a front-end web application designed to help users perform data analysis, visualization, and basic programming tasks using Pyodide—a Python runtime for the web—along with large language models (currently supporting ChatGPT).
+**Lemon** is a front-end web application designed to help users perform data analysis, visualization, and basic programming tasks using Pyodide—a Python runtime for the web—along with large language models (currently supporting ChatGPT).
 
 ## Installation Instructions
 

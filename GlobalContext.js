@@ -115,12 +115,28 @@ export const GlobalContextProvider = ({ children }) => {
         });
     }
 
-    const readFile = path => {
+    const readFile = (path, encoding = null) => {
         if (!pyodide) {
             throw new Error('Pyodide not loaded yet');
         }
+
         const bytes = pyodide.FS.readFile(path);
-        const blob = new Blob([bytes], { type: getMimeType(path) });
+        const mimeType = getMimeType(path);
+
+        if (encoding === "base64") {
+            const chunkSize = 65536;
+            let binaryString = '';
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                binaryString += String.fromCharCode.apply(null, bytes.slice(i, i + chunkSize));
+            }
+            const base64Data = btoa(binaryString);
+            return {
+                data: base64Data,
+                mimeType
+            };
+        }
+
+        const blob = new Blob([bytes], { type: mimeType });
         const url = URL.createObjectURL(blob);
         return url;
     }

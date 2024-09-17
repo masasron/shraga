@@ -1,5 +1,4 @@
 import { SSE } from "sse.js";
-import html2canvas from "html2canvas";
 import Tooltip from "components/Tooltip";
 import GlobalContext from 'GlobalContext';
 import getMimeType from 'utils/getMimeType';
@@ -8,12 +7,14 @@ import LoadingText from 'components/LoadingText';
 import UserSettings from "components/UserSettings";
 import ChatTextField from 'components/ChatTextField';
 import { useContext, useState, useEffect } from 'react';
+import parseToolsHistory from "utils/parseToolsHistory";
 import { Settings2, Edit, Download } from "lucide-react";
 import AssistantMessage from "components/AssistantMessage";
 import InteractiveChart from "components/InteractiveChart";
 import LLMStreamingHandler from 'utils/LLMStreamingHandler';
 import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
+import exportAsJuptyerNotebook from 'utils/exportAsJuptyerNotebook';
 
 function Index() {
     const [files, setFiles] = useState([]);
@@ -21,7 +22,7 @@ function Index() {
     const [loading, setLoading] = useState(false);
     const [streamedMessage, setStreamedMessage] = useState("");
     const [isToolCallsStreaming, setIsToolCallsStreaming] = useState(false);
-    const { isLoading, runPython, writeFile, deleteFile, pyodide,
+    const { isLoading, runPython, writeFile, readFile, deleteFile, pyodide,
         userSettings, setUserSettings, openInDrawer } = useContext(GlobalContext);
 
     useEffect(function () {
@@ -72,28 +73,15 @@ function Index() {
         }
     }, []);
 
-    function exportConversationScreenshot() {
-        const container = document.getElementById("messages_container");
-        if (!container) return;
-        const fonts = document.fonts;
-        html2canvas(container, {
-            scale: 3, // Increase resolution
-            scrollX: 0, // Ensure X scroll position is 0
-            scrollY: 0, // Ensure Y scroll position is 0
-            y: 0,      // Start capturing from the top
-            height: container.scrollHeight, // Full height of the content
-            windowHeight: container.scrollHeight + container.offsetHeight, // Capture everything, accounting for the container height
-            onclone: (clonedDocument) => {
-                fonts.forEach(font => clonedDocument.fonts.add(font));
-                clonedDocument.getElementById("messages_container").scrollTop = 0; // Make sure the cloned container starts from the top
-            }
-        }).then(canvas => {
-            const dataURL = canvas.toDataURL("image/png", 1.0);
-            const a = document.createElement("a");
-            a.href = dataURL;
-            a.download = "lemon-conversation.png";
-            a.click();
-        });
+    function handleExport(messages) {
+        const cells = exportAsJuptyerNotebook(messages, { readFile, parseToolsHistory });
+        const json = JSON.stringify({ cells });
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = new Date().getTime() + "-notebook.ipynb";
+        a.click();
     }
 
     function scrollDown() {
@@ -278,8 +266,8 @@ function Index() {
                         {MODELS.map(model => <option key={model.value} value={model.value}>{model.name}</option>)}
                     </select>
                     <div className="flex-1" />
-                    {messages.length > 1 && <Tooltip content="Save conversation" position="bottom">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={exportConversationScreenshot}>
+                    {messages.length > 1 && <Tooltip content="Export as Jupyter Notebook" position="bottom">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => handleExport(messages)}>
                             <Download size={20} />
                         </button>
                     </Tooltip>}
