@@ -108,8 +108,8 @@ export const GlobalContextProvider = ({ children }) => {
             reader.onload = function (event) {
                 const arrayBuffer = event.target.result;
                 const buffer = new Uint8Array(arrayBuffer);
-                pyodide.FS.writeFile(`/data/${file.name}`, buffer);
-                resolve(`/data/${file.name}`);
+                pyodide.FS.writeFile(`/data/${file.unique_name || file.name}`, buffer);
+                resolve(`/data/${file.unique_name || file.name}`);
             };
             reader.readAsArrayBuffer(file);
         });

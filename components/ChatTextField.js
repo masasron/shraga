@@ -36,7 +36,7 @@ function ChatTextField(props) {
 
     return <div className="w-full flex flex-col gap-2 bg-gray-100 p-2 rounded-xl">
         {props.files.length > 0 && <div className="flex gap-2 overflow-x-auto">
-            {props.files.map((file, i) => <FileCard key={i} file={file} onDelete={props.onFileDelete} />)}
+            {props.files.map(file => <FileCard key={file.unique_name} file={file} onDelete={props.onFileDelete} />)}
         </div>}
         <div className='flex items-center gap-1'>
             <button onClick={() => fileInputRef.current.click()} className='px-2 attachment-icon'>

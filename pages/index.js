@@ -179,12 +179,13 @@ function Index() {
             openInDrawer(<UserSettings />);
             return false;
         }
-
+        window.files = new Map();
         setFiles(uploaadedFiles => {
             if (uploaadedFiles.length === 0) return [];
             let newMessage = "<user files>\n";
             for (let file of uploaadedFiles) {
-                newMessage += "/data/" + file.name + "\n";
+                newMessage += "/data/" + file.unique_name + "\n";
+                window.files.set(file.unique_name, file);
             }
             newMessage += "</user files>\n";
             message = newMessage + "\n" + message;
@@ -197,19 +198,40 @@ function Index() {
     }
 
     function handleFileDelete(file) {
-        setFiles(oldFiles => oldFiles.filter(f => f.name !== file.name));
-        deleteFile(`/data/${file.name}`);
+        setFiles(oldFiles => oldFiles.filter(f => f.unique_name !== file.unique_name));
+        deleteFile(`/data/${file.unique_name}`);
+    }
+
+    function fileNameExists(name) {
+        return new Promise((resolve, _) => {
+            setFiles(oldFiles => {
+                let fileNameAlreadyExists = oldFiles.find(f => f.unique_name === name);
+                resolve(fileNameAlreadyExists);
+                return oldFiles;
+            });
+        });
     }
 
     async function handleFiles(event) {
         const fileList = Array.from(event?.target?.files || event?.dataTransfer?.files);
         for (let file of fileList) {
+            let name = file.name;
+            let index = 1;
+            while (await fileNameExists(name)) {
+                name = `copy-${index}-${file.name}`;
+                index++;
+            }
+            file.unique_name = name;
             file.type_label = getMimeType(file.name).split("/")[1];
             file.status = 'loading';
             setFiles(oldFiles => [file, ...oldFiles]);
             await writeFile(file);
             file.status = 'done';
-            setFiles(oldFiles => oldFiles.map(f => f.name === file.name ? file : f));
+            setFiles(oldFiles => oldFiles.map(f => f.unique_name === file.unique_name ? file : f));
+        }
+        // clear file input
+        if (event.target) {
+            event.target.value = "";
         }
     }
 

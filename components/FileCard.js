@@ -1,3 +1,5 @@
+import cn from 'utils/cn';
+import { useState, useEffect } from 'react';
 import getMimeType from 'utils/getMimeType';
 import { FileSpreadsheet, FileDigit, FileArchive, FileJson, FileCode, FileAudio2, FileText, FileImage, FileVideo, X } from 'lucide-react';
 
@@ -89,10 +91,67 @@ function FileIconByType(type) {
     return mapping[type];
 }
 
+function generateThumbnail(file, callback) {
+    const maxSize = 126;
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        img.src = event.target.result;
+
+        img.onload = function () {
+            let targetWidth, targetHeight;
+            let offsetX = 0, offsetY = 0;
+
+            // Calculate the aspect ratio
+            const aspectRatio = img.width / img.height;
+
+            if (img.width > img.height) {
+                // Landscape image: scale based on height and crop the sides
+                targetHeight = maxSize;
+                targetWidth = aspectRatio * maxSize;
+                offsetX = (targetWidth - maxSize) / 2;
+            } else {
+                // Portrait image: scale based on width and crop the top/bottom
+                targetWidth = maxSize;
+                targetHeight = maxSize / aspectRatio;
+                offsetY = (targetHeight - maxSize) / 2;
+            }
+
+            canvas.width = maxSize;
+            canvas.height = maxSize;
+
+            // Draw the scaled and cropped image onto the canvas
+            ctx.drawImage(img, -offsetX, -offsetY, targetWidth, targetHeight);
+
+            // Convert the canvas to a data URL and pass it to the callback
+            callback(canvas.toDataURL('image/jpeg'));
+        };
+    };
+
+    reader.readAsDataURL(file);
+}
+
 export default function FileCard(props) {
     const file = props.file;
+
+    if (!file) {
+        return null;
+    }
+
     const fileType = file.type ? file.type : getMimeType(file.name);
     const FileIcon = FileIconByType(fileType);
+    const [imageThumbnail, setImageThumbnail] = useState(null);
+
+    useEffect(() => {
+        if (fileType.startsWith("image/")) {
+            generateThumbnail(file, (thumbnail) => {
+                setImageThumbnail(thumbnail);
+            });
+        }
+    }, []);
 
     let fileSize = null;
     if (file.size) {
@@ -107,12 +166,13 @@ export default function FileCard(props) {
     }
 
     return <div className='bg-white relative flex gap-2 items-center p-2 rounded-lg'>
-        <div className='p-2 rounded-lg bg-purple-400'>
+        <div className={cn('rounded-lg bg-purple-400', imageThumbnail ? "p-1" : "p-2")}>
             {file.status === 'loading' && <img src="/loader.svg" width="26" />}
-            {file.status === 'done' && <FileIcon color="white" />}
+            {file.status === 'done' && imageThumbnail && <div className='w-[36px] h-[36px]'><img className='rounded w-full overflow-hidden' src={imageThumbnail} /></div>}
+            {file.status === 'done' && !imageThumbnail && <FileIcon color="white" />}
         </div>
         <div className='flex flex-col text-[12px]'>
-            <label title={file.name} className='overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>{file.name}</label>
+            <label title={file.unique_name || file.name} className='overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>{file.unique_name || file.name}</label>
             <label title={file.type_label} className='text-gray-400 flex gap-1 font-bold uppercase overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>
                 {fileSize && <span>{fileSize}</span>}
                 {!fileSize && <span>{file.type_label}</span>}
