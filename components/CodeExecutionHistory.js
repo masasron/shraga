@@ -1,9 +1,9 @@
+import { Alert } from './Alert';
 import GlobalContext from 'GlobalContext';
 import { useContext, useState } from "react";
 import { CopyIcon, CheckIcon, CircleAlert, Eye, EyeOff } from "lucide-react";
 import { oneLight } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
-import { Alert } from './Alert';
 
 function CodeExecutionHistory(props) {
     const toolsHistory = props.toolsHistory;
@@ -21,8 +21,8 @@ function CodeExecutionHistory(props) {
         });
     }
 
-    return <div className="mx-auto w-full">
-        <div className="mb-3 text-sm w-full mx-auto max-w-[100vh] max-h-[90vh] overflow-y-auto whitespace-break-spaces">
+    return <div className="mx-auto w-full max-h-[80vh] overflow-y-auto ">
+        <div className="mb-3 text-sm w-full mx-auto max-w-[100vh] max-h-[80vh] whitespace-break-spaces">
             {errorsCount > 0 && <div className="p-2 justify-center flex">
                 <Alert className="mr-2" variant="warning">
                     <div className='flex text-[13px] gap-2 justify-center'>

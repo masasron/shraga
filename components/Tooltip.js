@@ -156,7 +156,7 @@ const Tooltip = ({ children, content, position = 'top' }) => {
             {children}
             <div
                 onMouseEnter={(e) => e.stopPropagation()}
-                className={`absolute z-10 whitespace-nowrap pointer-events-none bg-black text-white text-xs px-2 py-1 rounded scale-50 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 ${tooltipPositionClasses} hidden sm:block`}
+                className={`absolute z-10 whitespace-nowrap pointer-events-none bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 duration-75 ease-in-out ${tooltipPositionClasses} hidden sm:block`}
             >
                 {content}
                 <div

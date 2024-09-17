@@ -15,6 +15,7 @@ import {
     AlertTitle,
 } from "components/Alert";
 import { MODELS } from "utils/common";
+import Tooltip from "./Tooltip";
 
 export default function UserSettings() {
     const { userSettings, setUserSettings } = useContext(GlobalContext);
@@ -60,9 +61,11 @@ export default function UserSettings() {
         </DrawerHeader>
         <DrawerFooter className="items-center">
             <DrawerClose>
-                <buttton title="Close" className="p-1 rounded-lg hover:bg-gray-100 inline-block">
-                    <X />
-                </buttton>
+                <Tooltip content="Close" position="left">
+                    <buttton className="p-2 rounded-lg hover:bg-gray-100 inline-block">
+                        <X />
+                    </buttton>
+                </Tooltip>
             </DrawerClose>
         </DrawerFooter>
     </div>
