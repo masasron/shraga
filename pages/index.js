@@ -8,9 +8,10 @@ import UserSettings from "components/UserSettings";
 import ChatTextField from 'components/ChatTextField';
 import { useContext, useState, useEffect } from 'react';
 import parseToolsHistory from "utils/parseToolsHistory";
-import { Settings2, Edit, Download } from "lucide-react";
+import { Settings2, Edit, Download, Github } from "lucide-react";
 import AssistantMessage from "components/AssistantMessage";
 import InteractiveChart from "components/InteractiveChart";
+import OnboardingDialog from "components/OnboardingDialog";
 import LLMStreamingHandler from 'utils/LLMStreamingHandler';
 import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
@@ -21,9 +22,9 @@ function Index() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [streamedMessage, setStreamedMessage] = useState("");
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const [isToolCallsStreaming, setIsToolCallsStreaming] = useState(false);
-    const { isLoading, runPython, writeFile, readFile, deleteFile, pyodide,
-        userSettings, setUserSettings, openInDrawer } = useContext(GlobalContext);
+    const { isLoading, runPython, writeFile, readFile, deleteFile, pyodide, userSettings, setUserSettings, openInDrawer } = useContext(GlobalContext);
 
     useEffect(function () {
         if (pyodide) {
@@ -42,17 +43,28 @@ function Index() {
                 e.preventDefault();
             }
 
+            dropArea.addEventListener('drop', handleDrop);
             dropArea.addEventListener('dragover', handleDragover);
             dropArea.addEventListener('dragleave', handleDragleave);
-            dropArea.addEventListener('drop', handleDrop);
 
             return function () {
+                dropArea.removeEventListener('drop', handleDrop);
                 dropArea.removeEventListener('dragover', handleDragover);
                 dropArea.removeEventListener('dragleave', handleDragleave);
-                dropArea.removeEventListener('drop', handleDrop);
             }
         }
     }, [pyodide]);
+
+    useEffect(function () {
+        if (!isLoading) {
+            let timeout = setTimeout(() => {
+                setShowOnboarding(localStorage.getItem("onboarded") !== "1");
+            }, 1500);
+            return function () {
+                clearTimeout(timeout);
+            }
+        }
+    }, [isLoading]);
 
     useEffect(function () {
         // listen for stream-tool-calls-done and stream-tool-calls events
@@ -107,7 +119,7 @@ function Index() {
     }
 
     async function runTool(toolName, args) {
-        console.log('trying to run tool', toolName, args);
+        console.log('>>> Running tool:', toolName, args);
 
         if (toolName === "micropip_install") {
             const packageName = args.name;
@@ -179,7 +191,9 @@ function Index() {
             openInDrawer(<UserSettings />);
             return false;
         }
+
         window.files = new Map();
+
         setFiles(uploaadedFiles => {
             if (uploaadedFiles.length === 0) return [];
             let newMessage = "<user files>\n";
@@ -191,9 +205,11 @@ function Index() {
             message = newMessage + "\n" + message;
             return [];
         });
+
         setMessages(oldMessages => [...oldMessages, { role: 'user', content: message }]);
         processMessages();
         scrollDown();
+
         return true;
     }
 
@@ -259,7 +275,7 @@ function Index() {
     }
 
     function handleStartNewChat() {
-        if (confirm("Are you sure you want to start a new chat?\nThis will clear the current chat history.")) {
+        if (messages.length === 0 || confirm("Are you sure you want to start a new chat?\nThis will clear the current chat history.")) {
             window.location.reload(true);
         }
     }
@@ -273,15 +289,21 @@ function Index() {
         });
     }
 
+    function handleOnboardingClose() {
+        setShowOnboarding(false);
+        localStorage.setItem("onboarded", "1");
+    }
+
     return <>
         {(isLoading || messages.length === 0) && <div className="fixed top-0 left-0 w-full h-full">
             <div className="flex h-full items-center justify-center">
                 <div className="spin-and-scale">
-                    <LoadingText><img src="/lemon-top.svg" width="64" /></LoadingText>
+                    <LoadingText><img src="/lemon-top-black.svg" width="64" /></LoadingText>
                 </div>
             </div>
         </div>}
         {!isLoading && <>
+            {showOnboarding && <OnboardingDialog onClose={handleOnboardingClose} />}
             <ChatLayout
                 header={<>
                     <select value={userSettings.model} onChange={handleModelUpdate} className="p-2 font-bold text-md hover:bg-gray-100 transition-colors rounded-lg">
@@ -298,9 +320,14 @@ function Index() {
                             <Settings2 size={20} />
                         </button>
                     </Tooltip>
-                    <Tooltip content="New chat" position="bottom-right">
+                    <Tooltip content="New chat" position="bottom">
                         <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={handleStartNewChat}>
                             <Edit size={20} />
+                        </button>
+                    </Tooltip>
+                    <Tooltip content="Source code" position="bottom-right">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => window.open("https://github.com/masasron/lemon", "_blank")}>
+                            <Github size={20} />
                         </button>
                     </Tooltip>
                 </>}
