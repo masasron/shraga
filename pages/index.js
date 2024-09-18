@@ -325,7 +325,7 @@ function Index() {
                             <Edit size={20} />
                         </button>
                     </Tooltip>
-                    <Tooltip content="Source code" position="bottom-right">
+                    <Tooltip content="Lemon on Github" position="bottom-right">
                         <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => window.open("https://github.com/masasron/lemon", "_blank")}>
                             <Github size={20} />
                         </button>
