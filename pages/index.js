@@ -24,7 +24,7 @@ function Index() {
     const [streamedMessage, setStreamedMessage] = useState("");
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [isToolCallsStreaming, setIsToolCallsStreaming] = useState(false);
-    const { isLoading, runPython, writeFile, readFile, deleteFile, pyodide, userSettings, setUserSettings, openInDrawer } = useContext(GlobalContext);
+    const { isLoading, runPython, writeFile, readFile, deleteFile, pyodide, userSettings, setUserSettings, openInDrawer, messageFiles } = useContext(GlobalContext);
 
     useEffect(function () {
         if (pyodide) {
@@ -192,14 +192,12 @@ function Index() {
             return false;
         }
 
-        window.files = new Map();
-
         setFiles(uploaadedFiles => {
             if (uploaadedFiles.length === 0) return [];
             let newMessage = "<user files>\n";
             for (let file of uploaadedFiles) {
                 newMessage += "/data/" + file.unique_name + "\n";
-                window.files.set(file.unique_name, file);
+                messageFiles.set(file.unique_name, file);
             }
             newMessage += "</user files>\n";
             message = newMessage + "\n" + message;

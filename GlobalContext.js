@@ -13,6 +13,7 @@ export const GlobalContextProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [userSettings, setUserSettings] = useState({});
     const [drawerIsOpen, setDrawerIsOpen] = useState(false);
+    const [messageFiles, setMessageFiles] = useState(new Map());
     const [drawerComponent, setDrawerComponent] = useState(null);
 
     useEffect(function () {
@@ -173,7 +174,8 @@ export const GlobalContextProvider = ({ children }) => {
             userSettings, setUserSettings, openInDrawer,
             drawerIsOpen, setDrawerIsOpen, drawerComponent, setDrawerComponent,
             pyodide, output, setOutput, deleteFile,
-            isLoading, writeFile, readFile, runPython
+            isLoading, writeFile, readFile, runPython,
+            messageFiles, setMessageFiles
         }}>
             {children}
             <Drawer open={drawerIsOpen} onOpenChange={handleDrawerOpenChange}>

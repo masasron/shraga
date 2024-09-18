@@ -1,24 +1,21 @@
 import FileCard from "./FileCard";
-import { useState, useEffect } from "react";
-
-function getFileFromPath(path) {
-    if (!window.files) {
-        return null;
-    }
-
-    let fileName = path.split('/').pop();
-    if (!window.files.has(fileName)) {
-        return null;
-    }
-
-    let file = window.files.get(fileName);
-    window.files.delete(fileName);
-    return file;
-}
+import GlobalContext from "GlobalContext";
+import { useState, useEffect, useContext } from "react";
 
 export default function UserMessage(props) {
     let content = props.content;
     let [files, setFiles] = useState([]);
+    let { messageFiles } = useContext(GlobalContext);
+
+    function getFileFromPath(path) {
+        let fileName = path.split('/').pop();
+        if (!messageFiles.has(fileName)) {
+            return null;
+        }
+        let file = messageFiles.get(fileName);
+        messageFiles.delete(fileName);
+        return file;
+    }
 
     if (content.indexOf("<user files>") === -1 || content.indexOf("</user files>") === -1) {
         return <>{props.content}</>

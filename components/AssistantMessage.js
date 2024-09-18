@@ -69,11 +69,12 @@ function AssistantMessage(props) {
                     },
                     img: ({ node, inline, className, src, children, ...props }) => {
                         console.log("rendering image in ReactMarkdown");
+                        // Ideally we should check only for the sandbox: prefix
+                        // but the model can also return /data/ and data/ paths in the markdown content
                         if (src.startsWith("sandbox:") || src.startsWith("/data/") || src.startsWith("data/")) {
                             if (src.startsWith("data/")) {
                                 src = `/${src}`;
                             }
-
                             if (src.startsWith("/data/")) {
                                 src = `sandbox:${src}`;
                             }
@@ -87,6 +88,8 @@ function AssistantMessage(props) {
                                 console.log("error reading image as blob", src);
                             }
 
+                            // This is a hack to detect if the image is a chart
+                            // we should find a better way to do this
                             let isChart = false;
                             if (window) {
                                 if (typeof window.lastChartCount === "undefined") {
