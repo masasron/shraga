@@ -59,7 +59,7 @@ function Index() {
     useEffect(function () {
         if (!isLoading) {
             let timeout = setTimeout(() => {
-                setShowOnboarding(localStorage.getItem("onboarded") !== "2");
+                setShowOnboarding(localStorage.getItem("onboarded") !== "1");
             }, 1500);
             return function () {
                 clearTimeout(timeout);
