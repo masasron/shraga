@@ -1,4 +1,5 @@
 import { SSE } from "sse.js";
+import Shraga from "components/Shraga";
 import Tooltip from "components/Tooltip";
 import GlobalContext from 'GlobalContext';
 import getMimeType from 'utils/getMimeType';
@@ -8,11 +9,11 @@ import UserSettings from "components/UserSettings";
 import ChatTextField from 'components/ChatTextField';
 import { useContext, useState, useEffect } from 'react';
 import parseToolsHistory from "utils/parseToolsHistory";
-import { Settings2, Edit, Download, Github } from "lucide-react";
 import AssistantMessage from "components/AssistantMessage";
 import InteractiveChart from "components/InteractiveChart";
 import OnboardingDialog from "components/OnboardingDialog";
 import LLMStreamingHandler from 'utils/LLMStreamingHandler';
+import { Settings2, Edit, Download, Github } from "lucide-react";
 import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
 import exportAsJuptyerNotebook from 'utils/exportAsJuptyerNotebook';
@@ -58,7 +59,7 @@ function Index() {
     useEffect(function () {
         if (!isLoading) {
             let timeout = setTimeout(() => {
-                setShowOnboarding(localStorage.getItem("onboarded") !== "1");
+                setShowOnboarding(localStorage.getItem("onboarded") !== "2");
             }, 1500);
             return function () {
                 clearTimeout(timeout);
@@ -295,8 +296,10 @@ function Index() {
     return <>
         {(isLoading || messages.length === 0) && <div className="fixed top-0 left-0 w-full h-full">
             <div className="flex h-full items-center justify-center">
-                <div className="spin-and-scale">
-                    <LoadingText><img src="/lemon-top-black.svg" width="64" /></LoadingText>
+                <div>
+                    <LoadingText stop={isLoading ? undefined : 1}>
+                        <Shraga />
+                    </LoadingText>
                 </div>
             </div>
         </div>}
@@ -323,7 +326,7 @@ function Index() {
                             <Edit size={20} />
                         </button>
                     </Tooltip>
-                    <Tooltip content="Lemon on Github" position="bottom-right">
+                    <Tooltip content="Shraga on Github" position="bottom-right">
                         <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => window.open("https://github.com/masasron/lemon", "_blank")}>
                             <Github size={20} />
                         </button>
