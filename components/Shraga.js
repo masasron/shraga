@@ -50,10 +50,9 @@ export default function Shraga() {
     }, []);
 
     return <div className="rounded-full border-[1px] border-slate-100 relative bg-white p-2 min-w-[120px] min-h-[120px] flex items-center justify-center" style={{
-        background: 'url(/profile2.png) no-repeat bottom center',
+        background: 'url(/shraga.svg) no-repeat bottom center',
         backgroundColor: "#fff",
-        backgroundSize: '120px',
-        transformOrigin: 'center center'
+        backgroundSize: '120px'
     }}>
         <div className="absolute w-[9px] h-[9px] rounded-full" style={{ left: 40, top: 50 }}>
             <div ref={leftEye} className="absolute blinking w-[2px] h-[2px] rounded-full bg-black" />

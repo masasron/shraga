@@ -296,7 +296,7 @@ function Index() {
     return <>
         {(isLoading || messages.length === 0) && <div className="fixed top-0 left-0 w-full h-full">
             <div className="flex h-full items-center justify-center">
-                <div>
+                <div style={{ transform: "scale(1.4)" }}>
                     <LoadingText stop={isLoading ? undefined : 1}>
                         <Shraga />
                     </LoadingText>
