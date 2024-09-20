@@ -296,7 +296,7 @@ function Index() {
     return <>
         {(isLoading || messages.length === 0) && <div className="fixed top-0 left-0 w-full h-full">
             <div className="flex h-full items-center justify-center">
-                <div style={{ transform: "scale(1.4)" }}>
+                <div onClick={() => setShowOnboarding(true)} style={{ transform: "scale(1.4)" }}>
                     <LoadingText stop={isLoading ? undefined : 1}>
                         <Shraga />
                     </LoadingText>
@@ -332,7 +332,9 @@ function Index() {
                         </button>
                     </Tooltip>
                 </>}
-                footer={<ChatContainer><ChatTextField onStop={handleStop} loading={loading} files={files} onFiles={handleFiles} onFileDelete={handleFileDelete} onMessage={handleMessage} placeholder={userSettings?.name ? `Hi ${userSettings.name}, how can I help?` : "Ask anything"} /></ChatContainer>}>
+                footer={<ChatContainer>
+                    <ChatTextField onStop={handleStop} loading={loading} files={files} onFiles={handleFiles} onFileDelete={handleFileDelete} onMessage={handleMessage} placeholder={userSettings?.name ? `Hi ${userSettings.name}, how can I help?` : "Ask anything"} />
+                </ChatContainer>}>
                 <ChatContainer>
                     {messages.map((message, i) => {
                         return ((message.role === "assistant" || message.role === "user") && message.content) ? <div key={i} className={`flex gap-2 ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
