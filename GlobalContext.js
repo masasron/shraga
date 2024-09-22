@@ -55,7 +55,7 @@ export const GlobalContextProvider = ({ children }) => {
                 document.pyodideMplTarget.style = "position:fixed;top:0;left:0;width:0px;height:0px;opacity:0;overflow:hidden;z-index:-1;";
                 document.body.appendChild(document.pyodideMplTarget);
 
-                //await pyodideInstance.loadPackage(['matplotlib', 'pandas', 'micropip']);
+                //await pyodideInstance.loadPackage(['matplotlib']);
 
                 setPyodide(pyodideInstance);
                 setIsLoading(false);
@@ -99,6 +99,26 @@ export const GlobalContextProvider = ({ children }) => {
             });
         }
     }, []);
+
+    function removeMatplotlib(code) {
+        let lines = code.split('\n');
+        let newCode = '';
+        let inMatplotlib = false;
+        for (let line of lines) {
+            if (line.includes('import matplotlib')) {
+                if (!window.didImportMatplotlib) {
+                    window.didImportMatplotlib = true;
+                    return code;
+                }
+                console.log("found matplotlib import, skipping");
+                inMatplotlib = true;
+            }
+            if (!inMatplotlib) {
+                newCode += line + '\n';
+            }
+        }
+        return newCode;
+    }
 
     const writeFile = file => {
         return new Promise((resolve, reject) => {
@@ -154,7 +174,7 @@ export const GlobalContextProvider = ({ children }) => {
             throw new Error('Pyodide not loaded yet');
         }
         try {
-            await pyodide.loadPackagesFromImports(code);
+            await pyodide.loadPackagesFromImports(removeMatplotlib(code));
             const result = await pyodide.runPythonAsync(code);
             if (result) {
                 setOutput(result);
