@@ -1,8 +1,8 @@
 {
   "private": true,
-  "name": "lemon",
+  "name": "shraga",
   "version": "0.0.1",
-  "description": "",
+  "description": "Private, powerful data analysis—right in your browser.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
