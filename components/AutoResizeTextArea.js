@@ -44,7 +44,7 @@ function AutoResizedTextarea(props) {
             placeholder={props.placeholder || ""}
             className={props.className || ""}
             autoComplete={props.autoComplete || ""}
-            style={{ overflow: 'hidden', resize: 'none', boxSizing: 'border-box' }}
+            style={{ resize: 'none', boxSizing: 'border-box' }}
         />
     );
 }

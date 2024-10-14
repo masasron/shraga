@@ -34,15 +34,17 @@ function ChatTextField(props) {
         }
     }
 
-    return <div className="w-full flex flex-col gap-2 bg-gray-100 p-2 rounded-xl">
+    return <div className="w-full flex flex-col gap-2 bg-gray-100 p-2 rounded-[20px]">
         {props.files.length > 0 && <div className="flex gap-2 overflow-x-auto">
             {props.files.map(file => <FileCard key={file.unique_name} file={file} onDelete={props.onFileDelete} />)}
         </div>}
-        <div className='flex items-center gap-1'>
-            <button onClick={() => fileInputRef.current.click()} className='px-2 attachment-icon'>
+        <div className='flex items-end px-1'>
+            <button onClick={() => fileInputRef.current.click()} className='h-8 w-6 attachment-icon'>
                 <CgAttachment size={20} />
             </button>
-            <AutoResizedTextarea onKeyDown={handleKeyDown} value={value} onChange={e => setValue(e.target.value)} placeholder={props.placeholder} className="flex-1 bg-transparent resize-none outline-none" />
+            <div className="flex-1 pb-1 flex items-center justify-center">
+                <AutoResizedTextarea onKeyDown={handleKeyDown} value={value} onChange={e => setValue(e.target.value)} placeholder={props.placeholder} className="w-full overflow-y-auto max-h-[50vh] bg-transparent resize-none outline-none" />
+            </div>
             <button
                 onClick={() => (loading ? props.onStop() : emitMessage(value))}
                 className={`bg-black text-white w-8 h-8 flex justify-center items-center rounded-full ${(loading || !value) ? 'opacity-20' : ''}`}
