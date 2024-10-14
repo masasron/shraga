@@ -122,31 +122,11 @@ function Index() {
     async function runTool(toolName, args) {
         console.log('>>> Running tool:', toolName, args);
 
-        if (toolName === "micropip_install") {
-            const packageName = args.name;
-            try {
-                await pyodide.runPythonAsync(`import micropip; micropip.install('${packageName}')`);
-                return "success";
-            } catch (err) {
-                return "This package does not exist or could not be installed";
-            }
-        }
-
         if (toolName === "python") {
             try {
                 return await runPython(args.code.trim());
-            } catch (err) {
-                let error = err.toString();
-                console.log(error);
-                if (error.indexOf("coroutine = eval(self.code, globals, locals)") !== -1) {
-                    error = error.split("coroutine = eval(self.code, globals, locals)")[1];
-                    if (error.indexOf("File ") !== -1) {
-                        error = "File " + error.split("File ")[1];
-                    }
-                    error = error.trim();
-                    return "PythonError: " + error;
-                }
-                return error;
+            } catch (error) {
+                return error.toString();
             }
         }
 

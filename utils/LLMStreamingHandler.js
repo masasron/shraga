@@ -85,8 +85,8 @@ export default function LLMStreamingHandler(source, onMessage, runTool, setStrea
 
     source.addEventListener("message", handleIncomingMessage);
 
-    source.addEventListener("error", err => {
-        console.log(err);
+    source.addEventListener("error", error => {
+        console.log(error);
         setLoading(false);
         setStreamedMessage("Unexpected error occurred. Please try again.");
     });
