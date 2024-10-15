@@ -191,16 +191,20 @@ export default function FileCard(props) {
         </div>
 
         {showCSVPreview && file.csvPreview && <div className='p-2'>
-            <div className='bg-slate-50 text-left max-w-[500px] text-sm text-slate-900 p-2 rounded-lg mt-2 overflow-x-auto'>
+            <div className='bg-slate-50 text-left max-w-[500px] max-h-[250px] overflow-y-auto text-sm text-slate-900 p-2 rounded-lg mt-2 overflow-x-auto'>
                 <table className='w-[800px] table-fixed'>
                     <thead>
                         <tr className='p-2'>
-                            {Object.keys(file.csvPreview[0]).map((key, index) => <th key={index} className='border-b border-slate-200'>{key}</th>)}
+                            {Object.keys(file.csvPreview[0]).map((key, index) => <th key={index} className='border-b border-slate-200'>
+                                {key.toString().length > 69 ? `${key.toString().slice(0, 69)}...` : key}
+                            </th>)}
                         </tr>
                     </thead>
                     <tbody>
                         {file.csvPreview.map((row, index) => <tr key={index}>
-                            {Object.values(row).map((value, index) => <td key={index} className='border-b p-2 border-slate-200'>{value}</td>)}
+                            {Object.values(row).map((value, index) => <td key={index} className='border-b p-2 border-slate-200'>
+                                {value.toString().length > 69 ? `${value.toString().slice(0, 69)}...` : value}
+                            </td>)}
                         </tr>)}
                     </tbody>
                 </table>

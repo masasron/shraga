@@ -43,7 +43,7 @@ function ChatTextField(props) {
                 <CgAttachment size={20} />
             </button>
             <div className="flex-1 pb-1 flex items-center justify-center">
-                <AutoResizedTextarea onKeyDown={handleKeyDown} value={value} onChange={e => setValue(e.target.value)} placeholder={props.placeholder} className="w-full overflow-y-auto max-h-[50vh] bg-transparent resize-none outline-none" />
+                <AutoResizedTextarea onKeyDown={handleKeyDown} value={value} onChange={e => setValue(e.target.value)} placeholder={props.placeholder} className="w-full overflow-y-auto max-h-[30vh] bg-transparent resize-none outline-none" />
             </div>
             <button
                 onClick={() => (loading ? props.onStop() : emitMessage(value))}
