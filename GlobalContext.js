@@ -174,7 +174,7 @@ export const GlobalContextProvider = ({ children }) => {
             throw new Error('Pyodide not loaded yet');
         }
         try {
-            await pyodide.loadPackagesFromImports(removeMatplotlib(code));
+            await pyodide.loadPackagesFromImports(code);
             const result = await pyodide.runPythonAsync(code);
             if (result) {
                 setOutput(result);
