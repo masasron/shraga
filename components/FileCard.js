@@ -190,20 +190,20 @@ export default function FileCard(props) {
             </div>}
         </div>
 
-        {showCSVPreview && file.csvPreview && <div className='p-2'>
-            <div className='bg-slate-50 text-left max-w-[500px] max-h-[250px] overflow-y-auto text-sm text-slate-900 p-2 rounded-lg mt-2 overflow-x-auto'>
-                <table className='w-[800px] table-fixed'>
+        {showCSVPreview && file.csvPreview && <div>
+            <div className='bg-slate-50 border mb-2 text-left max-w-[500px] max-h-[250px] overflow-y-auto text-[12px] text-slate-900 rounded-lg mt-2 overflow-x-auto'>
+                <table className='w-[800px]'>
                     <thead>
-                        <tr className='p-2'>
-                            {Object.keys(file.csvPreview[0]).map((key, index) => <th key={index} className='border-b border-slate-200'>
-                                {key.toString().length > 69 ? `${key.toString().slice(0, 69)}...` : key}
+                        <tr>
+                            {Object.keys(file.csvPreview[0]).map((key, index) => <th key={index} className={cn('border-b p-2 border-slate-200', index < (Object.keys(file.csvPreview[0]).length - 1) ? 'border-r' : '')}>
+                                {key.toString().length > 42 ? `${key.toString().slice(0, 42)}...` : key}
                             </th>)}
                         </tr>
                     </thead>
                     <tbody>
                         {file.csvPreview.map((row, index) => <tr key={index}>
-                            {Object.values(row).map((value, index) => <td key={index} className='border-b p-2 border-slate-200'>
-                                {value.toString().length > 69 ? `${value.toString().slice(0, 69)}...` : value.toString()}
+                            {Object.values(row).map((value, rowIndex) => <td key={rowIndex} className={cn('p-2 border-slate-200', rowIndex < (Object.keys(row).length - 1) ? 'border-r' : '', file.csvPreview.length - 1 > index ? 'border-b' : '')}>
+                                {(value + "").length > 42 ? `${(value + "").slice(0, 42)}...` : (value + "")}
                             </td>)}
                         </tr>)}
                     </tbody>
