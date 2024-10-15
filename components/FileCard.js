@@ -145,7 +145,7 @@ export default function FileCard(props) {
     const fileType = file.type ? file.type : getMimeType(file.name);
     const FileIcon = FileIconByType(fileType);
     const [imageThumbnail, setImageThumbnail] = useState(null);
-    const [showCSVPreview, setShowCSVPreview] = useState(false);
+    const [showCSVPreview, setShowCSVPreview] = useState(true);
 
     useEffect(() => {
         console.log("fileType", fileType)

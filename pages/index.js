@@ -384,7 +384,7 @@ function Index() {
                 <ChatContainer>
                     {messages.map((message, i) => {
                         return ((message.role === "assistant" || message.role === "user") && message.content) ? <div key={i} className={`flex gap-2 ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
-                            <div className={`py-2 px-4 overflow-x-auto rounded-xl ${message.role === 'user' ? 'whitespace-break-spaces bg-gray-100 rounded-br-none max-w-[80%]' : 'text-black w-full bg-white'}`}>
+                            <div className={`overflow-x-auto rounded-xl ${message.role === 'user' ? 'whitespace-break-spaces bg-gray-100 rounded-br-none max-w-[80%]' : 'text-black w-full bg-white'}`}>
                                 {message.role === 'assistant' && <AssistantMessage messageIndex={i} messages={messages} onInteractiveChartRequest={handleChartRendering} content={message.content} />}
                                 {message.role === 'user' && <UserMessage content={message.content} />}
                             </div>

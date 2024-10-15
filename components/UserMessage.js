@@ -72,6 +72,7 @@ export default function UserMessage(props) {
     return (
         <div className="flex flex-col gap-1">
             <div
+                className="py-2 px-4"
                 ref={contentRef}
                 style={
                     !showFullMessage && isOverflowing
@@ -82,7 +83,7 @@ export default function UserMessage(props) {
                 {content}
             </div>
             {files.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto mt-2">
+                <div className="flex gap-2 overflow-x-auto px-2 pb-2">
                     {files.map((file, i) => (
                         <FileCard key={i} withPreview={true} canDelete={false} file={file} />
                     ))}

@@ -125,7 +125,7 @@ function AssistantMessage(props) {
     }, []);
 
     return <>
-        <div className="markdown-container">
+        <div className="markdown-container py-2 px-4">
             {content}
             <div className="flex gap-2 pb-6">
                 <Tooltip content="Copy" position="bottom-left">
