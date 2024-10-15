@@ -23,11 +23,27 @@ export default function UserMessage(props) {
 
     let filePaths = [];
     if (content.indexOf("<user files>") !== -1 && content.indexOf("</user files>") !== -1) {
-        filePaths = content
-            .split("<user files>")[1]
-            .split("</user files>")[0]
-            .split('\n')
-            .filter(f => f.length > 0);
+        let isCSVData = false,
+            filesData = content
+                .split("<user files>")[1]
+                .split("</user files>")[0]
+                .split('\n')
+                .filter(f => f.length > 0);
+
+        for (let row of filesData) {
+            if (isCSVData) {
+                if (row.endsWith("</csv>")) {
+                    isCSVData = false;
+                } else {
+                    continue;
+                }
+            }
+            if (row.startsWith("<csv>")) {
+                isCSVData = true;
+                continue;
+            }
+            filePaths.push(row);
+        }
         content = content.split("</user files>")[1].trim();
     }
 
@@ -50,13 +66,6 @@ export default function UserMessage(props) {
 
     return (
         <div className="flex flex-col gap-1">
-            {files.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto">
-                    {files.map((file, i) => (
-                        <FileCard key={i} canDelete={false} file={file} />
-                    ))}
-                </div>
-            )}
             <div
                 ref={contentRef}
                 style={
@@ -67,6 +76,13 @@ export default function UserMessage(props) {
             >
                 {content}
             </div>
+            {files.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto mt-2">
+                    {files.map((file, i) => (
+                        <FileCard key={i} withPreview={true} canDelete={false} file={file} />
+                    ))}
+                </div>
+            )}
             {isOverflowing && !showFullMessage && (
                 <div>
                     <button className="font-bold text-sm underline" onClick={() => setShowFullMessage(true)}>Show full message</button>

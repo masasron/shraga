@@ -1,4 +1,5 @@
 import { SSE } from "sse.js";
+import Papa from 'papaparse';
 import Shraga from "components/Shraga";
 import Tooltip from "components/Tooltip";
 import GlobalContext from 'GlobalContext';
@@ -167,6 +168,18 @@ function Index() {
         });
     }
 
+    function getProbableValueType(str) {
+        if (str === "true" || str === "false") return "boolean";
+        if (!isNaN(str)) return "number";
+
+        try {
+            let date = new Date(str);
+            if (!isNaN(date.getTime())) return "date";
+        } catch { }
+
+        return "string";
+    }
+
     function handleMessage(message) {
         if (userSettings.openai_api_key === "") {
             openInDrawer(<UserSettings />);
@@ -178,7 +191,16 @@ function Index() {
             let newMessage = "<user files>\n";
             for (let file of uploaadedFiles) {
                 newMessage += "/data/" + file.unique_name + "\n";
-                messageFiles.set(file.unique_name, file);
+                // if csvPreview add the csv header and values types to the message
+                if (file.csvPreview) {
+                    newMessage += "<csv><delimiter>" + file.csvDelimiter + "</delimiter><header>\n";
+                    newMessage += Object.keys(file.csvPreview[0]).join(",") + "\n";
+                    newMessage += "</header>\n";
+                    newMessage += "<types>\n";
+                    newMessage += Object.values(file.csvPreview[1]).map(getProbableValueType).join(",") + "\n";
+                    newMessage += "</types></csv>\n";
+                    messageFiles.set(file.unique_name, file);
+                }
             }
             newMessage += "</user files>\n";
             message = newMessage + "\n" + message;
@@ -207,6 +229,34 @@ function Index() {
         });
     }
 
+    function parseCSV(file) {
+        return new Promise((resolve) => {
+            let rowCount = 0; // Keep track of the number of rows parsed
+            const maxRows = 5; // Set the maximum number of rows to parse
+            Papa.parse(file, {
+                header: true,           // Parses the header row
+                dynamicTyping: true,    // Automatically converts types
+                worker: true,           // Use web workers for large files
+                step: function (results, parser) {
+                    rowCount++;
+                    file.csvPreview.push(results.data);
+                    if (rowCount >= maxRows) {
+                        parser.abort();
+                    }
+                },
+                error: function (err) {
+                    console.error('Parsing Error:', err);
+                    file.fileError = "Error parsing CSV file.";
+                    resolve(err);
+                },
+                complete: function (results) {
+                    file.csvDelimiter = results.meta.delimiter;
+                    resolve();
+                }
+            });
+        })
+    }
+
     async function handleFiles(event) {
         const fileList = Array.from(event?.target?.files || event?.dataTransfer?.files);
         for (let file of fileList) {
@@ -219,6 +269,16 @@ function Index() {
             file.unique_name = name;
             file.type_label = getMimeType(file.name).split("/")[1];
             file.status = 'loading';
+
+            file.csvPreview = [];
+            file.fileError = null;
+
+            if (file.type_label === "csv") {
+                await parseCSV(file);
+            }
+
+            console.log(file.csvPreview);
+
             setFiles(oldFiles => [file, ...oldFiles]);
             await writeFile(file);
             file.status = 'done';

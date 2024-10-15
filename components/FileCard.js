@@ -1,7 +1,8 @@
 import cn from 'utils/cn';
+import Tooltip from './Tooltip';
 import { useState, useEffect } from 'react';
 import getMimeType from 'utils/getMimeType';
-import { FileSpreadsheet, FileDigit, FileArchive, FileJson, FileCode, FileAudio2, FileText, FileImage, FileVideo, X } from 'lucide-react';
+import { Captions, CaptionsOff, FileSpreadsheet, FileDigit, FileArchive, FileJson, FileCode, FileAudio2, FileText, FileImage, FileVideo, X } from 'lucide-react';
 
 function FileIconByType(type) {
     const mapping = {
@@ -144,8 +145,10 @@ export default function FileCard(props) {
     const fileType = file.type ? file.type : getMimeType(file.name);
     const FileIcon = FileIconByType(fileType);
     const [imageThumbnail, setImageThumbnail] = useState(null);
+    const [showCSVPreview, setShowCSVPreview] = useState(false);
 
     useEffect(() => {
+        console.log("fileType", fileType)
         if (fileType.startsWith("image/")) {
             generateThumbnail(file, (thumbnail) => {
                 setImageThumbnail(thumbnail);
@@ -165,23 +168,56 @@ export default function FileCard(props) {
         fileSize = `${size.toFixed(2)} ${units[unitIndex]}`;
     }
 
-    return <div className='bg-white relative flex gap-2 items-center p-2 rounded-lg'>
-        <div className={cn('rounded-lg bg-purple-400', imageThumbnail ? "p-1" : "p-2")}>
-            {file.status === 'loading' && <img src="/loader.svg" width="26" />}
-            {file.status === 'done' && imageThumbnail && <div className='w-[36px] h-[36px]'><img className='rounded w-full overflow-hidden' src={imageThumbnail} /></div>}
-            {file.status === 'done' && !imageThumbnail && <FileIcon color="white" />}
+    return <div className='bg-white rounded-lg p-2'>
+        <div className='relative flex gap-2 items-center rounded-lg'>
+            <div className={cn('rounded-lg bg-purple-400', imageThumbnail ? "p-1" : "p-2")}>
+                {file.status === 'loading' && <img src="/loader.svg" width="26" />}
+                {file.status === 'done' && imageThumbnail && <div className='w-[36px] h-[36px]'><img className='rounded w-full overflow-hidden' src={imageThumbnail} /></div>}
+                {file.status === 'done' && !imageThumbnail && <FileIcon color="white" />}
+            </div>
+            <div className='flex flex-col text-[12px]'>
+                <label title={file.unique_name || file.name} className='overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>{file.unique_name || file.name}</label>
+                <label title={file.type_label} className='text-gray-400 flex gap-1 font-bold uppercase overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>
+                    {fileSize && <span>{fileSize}</span>}
+                    {!fileSize && <span>{file.type_label}</span>}
+                </label>
+            </div>
+            <div className='flex-1' />
+            {props.canDelete !== false && <div className='flex flex-col'>
+                <div className='rounded-full cursor-pointer bg-gray-300 p-[2px] border-gray-100 items-center border-[1px]'>
+                    <X onClick={() => props.onDelete(file)} size={14} color="white" />
+                </div>
+            </div>}
         </div>
-        <div className='flex flex-col text-[12px]'>
-            <label title={file.unique_name || file.name} className='overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>{file.unique_name || file.name}</label>
-            <label title={file.type_label} className='text-gray-400 flex gap-1 font-bold uppercase overflow-hidden overflow-ellipsis whitespace-nowrap max-w-[150px]'>
-                {fileSize && <span>{fileSize}</span>}
-                {!fileSize && <span>{file.type_label}</span>}
-            </label>
-        </div>
-        {props.canDelete !== false && <div className='flex flex-col'>
-            <div className='rounded-full cursor-pointer bg-gray-300 p-[2px] border-gray-100 items-center border-[1px]'>
-                <X onClick={() => props.onDelete(file)} size={14} color="white" />
+
+        {showCSVPreview && file.csvPreview && <div className='p-2'>
+            <div className='bg-slate-50 text-left max-w-[500px] text-sm text-slate-900 p-2 rounded-lg mt-2 overflow-x-auto'>
+                <table className='w-[800px] table-fixed'>
+                    <thead>
+                        <tr className='p-2'>
+                            {Object.keys(file.csvPreview[0]).map((key, index) => <th key={index} className='border-b border-slate-200'>{key}</th>)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {file.csvPreview.map((row, index) => <tr key={index}>
+                            {Object.values(row).map((value, index) => <td key={index} className='border-b p-2 border-slate-200'>{value}</td>)}
+                        </tr>)}
+                    </tbody>
+                </table>
             </div>
         </div>}
-    </div>
+
+        {props.withPreview && file.csvPreview && <div className='flex items-center justify-center'>
+            {!showCSVPreview && <small style={{ lineHeight: "12px" }} className='pr-2 text-[10px] text-gray-500'>CSV successfully parsed</small>}
+            {showCSVPreview && <small style={{ lineHeight: "12px" }} className='text-[10px] text-gray-500'>Column names and first-row data types would also be sent to OpenAI.</small>}
+            <div className='flex-1' />
+            <Tooltip content={showCSVPreview ? "Hide preview" : "Show preview"} position="left">
+                <button onClick={() => setShowCSVPreview(!showCSVPreview)} className='flex gap-1 items-center justify-center text-[11px] text-purple-500 hover:text-purple-700'>
+                    {!showCSVPreview ? <Captions size={15} /> : <CaptionsOff size={15} />}
+                </button>
+            </Tooltip>
+        </div>
+        }
+
+    </div >
 }
