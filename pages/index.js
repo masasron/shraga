@@ -171,6 +171,7 @@ function Index() {
     }
 
     function getProbableValueType(str) {
+        str = str.toString();
         if (str === "true" || str === "false") return "boolean";
         if (!isNaN(str)) return "number";
 

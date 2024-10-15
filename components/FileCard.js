@@ -203,7 +203,7 @@ export default function FileCard(props) {
                     <tbody>
                         {file.csvPreview.map((row, index) => <tr key={index}>
                             {Object.values(row).map((value, index) => <td key={index} className='border-b p-2 border-slate-200'>
-                                {value.toString().length > 69 ? `${value.toString().slice(0, 69)}...` : value}
+                                {value.toString().length > 69 ? `${value.toString().slice(0, 69)}...` : value.toString()}
                             </td>)}
                         </tr>)}
                     </tbody>
