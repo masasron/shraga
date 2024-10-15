@@ -127,6 +127,8 @@ function Index() {
             try {
                 return await runPython(args.code.trim());
             } catch (error) {
+                console.log("Python error after running tool python");
+                console.log(error);
                 return error.toString();
             }
         }
@@ -199,8 +201,9 @@ function Index() {
                     newMessage += "<types>\n";
                     newMessage += Object.values(file.csvPreview[1]).map(getProbableValueType).join(",") + "\n";
                     newMessage += "</types></csv>\n";
-                    messageFiles.set(file.unique_name, file);
                 }
+
+                messageFiles.set(file.unique_name, file);
             }
             newMessage += "</user files>\n";
             message = newMessage + "\n" + message;
@@ -270,14 +273,12 @@ function Index() {
             file.type_label = getMimeType(file.name).split("/")[1];
             file.status = 'loading';
 
-            file.csvPreview = [];
             file.fileError = null;
 
             if (file.type_label === "csv") {
+                file.csvPreview = [];
                 await parseCSV(file);
             }
-
-            console.log(file.csvPreview);
 
             setFiles(oldFiles => [file, ...oldFiles]);
             await writeFile(file);

@@ -210,7 +210,6 @@ export default function FileCard(props) {
                 </table>
             </div>
         </div>}
-
         {props.withPreview && file.csvPreview && <div className='flex items-center justify-center'>
             {!showCSVPreview && <small style={{ lineHeight: "12px" }} className='pr-2 text-[10px] text-gray-500'>CSV successfully parsed</small>}
             {showCSVPreview && <small style={{ lineHeight: "12px" }} className='text-[10px] text-gray-500'>Column names and first-row data types would also be sent to OpenAI.</small>}

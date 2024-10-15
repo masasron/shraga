@@ -12,11 +12,15 @@ export default function UserMessage(props) {
     const [isOverflowing, setIsOverflowing] = useState(false);
 
     function getFileFromPath(path) {
+        console.log("processing path", path)
         let fileName = path.split('/').pop();
+        console.log("file name=>", fileName);
         if (!messageFiles.has(fileName)) {
+            console.log("file not found", fileName);
             return null;
         }
         let file = messageFiles.get(fileName);
+        console.log("file=>", file);
         messageFiles.delete(fileName);
         return file;
     }
@@ -28,7 +32,7 @@ export default function UserMessage(props) {
                 .split("<user files>")[1]
                 .split("</user files>")[0]
                 .split('\n')
-                .filter(f => f.length > 0);
+                .filter(f => f.trim().length > 0);
 
         for (let row of filesData) {
             if (isCSVData) {
@@ -48,6 +52,7 @@ export default function UserMessage(props) {
     }
 
     useEffect(() => {
+        console.log("filePaths=>", filePaths);
         setFiles(filePaths.map(getFileFromPath));
     }, []);
 
