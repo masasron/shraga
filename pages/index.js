@@ -1,10 +1,10 @@
 import { SSE } from "sse.js";
 import Papa from 'papaparse';
-import Shraga from "components/Shraga";
-import Tooltip from "components/Tooltip";
+import Shraga from 'components/Shraga';
+import Tooltip from 'components/Tooltip';
 import GlobalContext from 'GlobalContext';
 import getMimeType from 'utils/getMimeType';
-import UserMessage from "components/UserMessage";
+import UserMessage from 'components/UserMessage';
 import LoadingText from 'components/LoadingText';
 import UserSettings from "components/UserSettings";
 import ChatTextField from 'components/ChatTextField';
@@ -26,7 +26,8 @@ function Index() {
     const [streamedMessage, setStreamedMessage] = useState("");
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [isToolCallsStreaming, setIsToolCallsStreaming] = useState(false);
-    const { isLoading, runPython, writeFile, readFile, deleteFile, pyodide, userSettings, setUserSettings, openInDrawer, messageFiles } = useContext(GlobalContext);
+    const { isLoading, runPython, writeFile, readFile, deleteFile,
+        pyodide, userSettings, setUserSettings, openInDrawer, messageFiles } = useContext(GlobalContext);
 
     useEffect(function () {
         if (pyodide) {
@@ -142,7 +143,7 @@ function Index() {
 
             const messageHistory = [
                 { role: "system", content: SYSTEM_PROMPT },
-                ...updatedMessages.map(m => {
+                ...updatedMessages.filter(msg => !msg.error).map(m => {
                     let msg = { role: m.role, content: m.content, tool_calls: m.tool_calls, tool_call_id: m.tool_call_id };
                     if (!msg.tool_calls) delete msg.tool_calls;
                     if (!msg.tool_call_id) delete msg.tool_call_id;

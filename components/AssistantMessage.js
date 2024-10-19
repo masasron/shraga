@@ -102,20 +102,20 @@ function AssistantMessage(props) {
                                 }
                             }
 
-                            return <p className="chart-preview border-[1px] overflow-hidden border-gray-200 rounded-lg gap-1 flex flex-col">
-                                <span className="flex p-2 gap-2">
-                                    <span className="flex-1" />
+                            return <div className="chart-preview border-[1px] overflow-hidden border-gray-200 rounded-lg flex flex-col">
+                                <div className="flex items-center p-1 justify-center gap-2">
+                                    <div className="flex-1" />
                                     <Tooltip content="Download" position="bottom-right">
                                         <button className="hover:bg-gray-100 p-1 rounded-lg" onClick={() => handleDownload(blobUrl, src)}><Download size={18} /></button>
                                     </Tooltip>
                                     {isChart && <Tooltip content="Open chart" position="bottom-right">
                                         <button className="hover:bg-gray-100 p-1 rounded-lg hidden md:block" onClick={onInteractiveChartRequest}><MousePointerClickIcon size={18} /></button>
                                     </Tooltip>}
-                                </span>
-                                <span className="block items-center justify-center p-2">
+                                </div>
+                                <div className="text-center border-t items-center justify-center p-2">
                                     <img className="max-w-[100%] w-auto mx-auto" src={blobUrl} {...props} />
-                                </span>
-                            </p>
+                                </div>
+                            </div>
                         }
                         return <img className={className} {...props} />
                     }
