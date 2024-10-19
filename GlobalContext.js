@@ -100,26 +100,6 @@ export const GlobalContextProvider = ({ children }) => {
         }
     }, []);
 
-    function removeMatplotlib(code) {
-        let lines = code.split('\n');
-        let newCode = '';
-        let inMatplotlib = false;
-        for (let line of lines) {
-            if (line.includes('import matplotlib')) {
-                if (!window.didImportMatplotlib) {
-                    window.didImportMatplotlib = true;
-                    return code;
-                }
-                console.log("found matplotlib import, skipping");
-                inMatplotlib = true;
-            }
-            if (!inMatplotlib) {
-                newCode += line + '\n';
-            }
-        }
-        return newCode;
-    }
-
     const writeFile = file => {
         return new Promise((resolve, reject) => {
             if (!pyodide) {
