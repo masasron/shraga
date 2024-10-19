@@ -1,7 +1,7 @@
 import {
     Drawer,
     DrawerContent,
-} from "components/Drawer";
+} from 'components/Drawer';
 import getMimeType from 'utils/getMimeType';
 import { createContext, useState, useEffect } from 'react';
 
