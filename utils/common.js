@@ -6,6 +6,14 @@ export const MODELS = [
     {
         name: "ChatGPT 4o",
         value: "gpt-4o"
+    },
+    {
+        name: "o3 Mini",
+        value: "o3-mini"
+    },
+    {
+        name: "o1",
+        value: "o1"
     }
 ];
 
