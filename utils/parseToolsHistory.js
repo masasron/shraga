@@ -25,7 +25,7 @@ export default function parseToolsHistory(messages, messageIndex) {
                     }
 
                     switch (call.function.name) {
-                        case "python":
+                        case "run_python":
                             console.log(">>>>> push python");
                             history.push({
                                 function: call.function.name,

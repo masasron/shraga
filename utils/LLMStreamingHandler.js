@@ -15,8 +15,54 @@ function handleStopStreamForOpenAI() {
     }
 }
 
+function extractCodeFromJsonString(jsonString) {
+    if (!jsonString || typeof jsonString !== 'string') {
+        return jsonString; // Return original if not a non-empty string
+    }
 
-export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runTool, setStreamedMessage, setLoading, provider) {
+    let trimmedString = jsonString.trim();
+
+    // Try to parse as-is first
+    try {
+        const parsed = JSON.parse(trimmedString);
+        if (parsed && typeof parsed.code === 'string') {
+            return parsed.code;
+        }
+        // If parsed but no .code, return original string (it's valid JSON but not what we want for code preview)
+        return jsonString;
+    } catch (e) {
+        // Not valid JSON, proceed to heuristic
+    }
+
+    // Heuristic for {"code": "..."} structure
+    if (trimmedString.startsWith('{"code":"')) {
+        try {
+            let tempStr = trimmedString + "\"}";
+            const parsed = JSON.parse(tempStr);
+            if (parsed && typeof parsed.code === 'string') {
+                return parsed.code;
+            }
+        } catch {
+        }
+
+        try {
+            let tempStr = trimmedString + "}";
+            const parsed = JSON.parse(tempStr);
+            if (parsed && typeof parsed.code === 'string') {
+                return parsed.code;
+            }
+        } catch {
+        }
+
+        // If it still fails, return original string
+        return jsonString;
+    }
+
+    // Fallback for any other case
+    return jsonString;
+}
+
+export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runTool, setStreamedMessage, setLoading, provider, setStreamedCodeContent, setShowCodePreview, loading) {
     let toolCalls = [];
     // let accumulatedJson = ""; // Not explicitly needed if each Gemini chunk is a full JSON
 
@@ -37,6 +83,8 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
     async function handleStreamEnd(_providerInternal) { // Renamed to avoid conflict with outer provider
         setStreamedMessage(content => {
             setLoading(false);
+            if (setShowCodePreview) setShowCodePreview(false); // Reset code preview state
+            if (setStreamedCodeContent) setStreamedCodeContent(""); // Clear streamed code content
             let msg = { role: "assistant", content };
             if (toolCalls.length > 0) {
                 msg.tool_calls = toolCalls;
@@ -74,11 +122,26 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
                 const streamEvent = new CustomEvent("stream-tool-calls");
                 window.dispatchEvent(streamEvent);
                 for (let tc of openAIToolCalls) {
-                    if (tc.id) {
+                    if (tc.id) { // New tool call
                         toolCalls.push({ id: tc.id, type: 'function', function: { name: tc.function.name || "", arguments: tc.function.arguments || "" } });
-                    } else {
+                        // Correctly reference the newly added tool call
+                        const currentToolCall = toolCalls[toolCalls.length - 1];
+                        if (currentToolCall.function.name === "run_python") {
+                            if (setShowCodePreview) setShowCodePreview(true);
+                            if (setStreamedCodeContent) {
+                                setStreamedCodeContent(extractCodeFromJsonString(currentToolCall.function.arguments));
+                            }
+                        }
+                    } else { // Appending to existing tool call (e.g. arguments)
                         if (tc.function && tc.function.arguments && toolCalls[tc.index]) {
                             toolCalls[tc.index].function.arguments += tc.function.arguments;
+                            // Check if this is for an ongoing python tool call
+                            if (toolCalls[tc.index].function.name === "run_python") {
+                                if (setShowCodePreview) setShowCodePreview(true); // Ensure it's true if we just identified it
+                                if (setStreamedCodeContent) {
+                                    setStreamedCodeContent(extractCodeFromJsonString(toolCalls[tc.index].function.arguments));
+                                }
+                            }
                         }
                     }
                 }
@@ -99,10 +162,22 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
                     const toolCallId = `call_${Date.now()}_${toolCallIdCounter++}`;
                     const streamEvent = new CustomEvent("stream-tool-calls");
                     window.dispatchEvent(streamEvent);
+                    const currentArguments = JSON.stringify(geminiFc.args || {});
                     toolCalls.push({
                         id: toolCallId, type: 'function',
-                        function: { name: geminiFc.name, arguments: JSON.stringify(geminiFc.args || {}) }
+                        function: { name: geminiFc.name, arguments: currentArguments }
                     });
+
+                    if (geminiFc.name === "python") {
+                        if (setShowCodePreview) setShowCodePreview(true);
+                        if (geminiFc.args && typeof geminiFc.args.code === 'string') {
+                            if (setStreamedCodeContent) setStreamedCodeContent(geminiFc.args.code);
+                        } else if (geminiFc.args) { // If args exist but .code is not a string
+                            if (setStreamedCodeContent) setStreamedCodeContent(JSON.stringify(geminiFc.args, null, 2));
+                        } else { // No args
+                            if (setStreamedCodeContent) setStreamedCodeContent("");
+                        }
+                    }
                 }
                 // Gemini stream end is handled by the loop finishing in the main function block
             } catch (e) {
@@ -133,11 +208,15 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
         })();
         return; // Important: return to prevent EventSource logic from running for Gemini
     } else if (provider === "openai") {
-        currentEventSource = new SSE(sourceOrStreamUrl, { // sourceOrStreamUrl is the URL string
-            headers: JSON.parse(JSON.stringify(arguments[0].headers || {})), // Kludgy way to pass headers if needed, or adjust signature
-            method: "POST", // This was part of old setup, ensure it's passed correctly
-            payload: JSON.parse(JSON.stringify(arguments[0].payload || {})), // Same for payload
-        });
+        if (typeof sourceOrStreamUrl !== "string") {
+            currentEventSource = sourceOrStreamUrl; // sourceOrStreamUrl is the EventSource instance
+        } else {
+            currentEventSource = new SSE(sourceOrStreamUrl, { // sourceOrStreamUrl is the URL string
+                headers: JSON.parse(JSON.stringify(arguments[0].headers || {})), // Kludgy way to pass headers if needed, or adjust signature
+                method: "POST", // This was part of old setup, ensure it's passed correctly
+                payload: JSON.parse(JSON.stringify(arguments[0].payload || {})), // Same for payload
+            });
+        }
 
         // Make sure arguments[0].headers and arguments[0].payload are correctly passed or refactor how SSE is initialized
         // This part is tricky as the original SSE initialization was in `pages/index.js`
