@@ -16,7 +16,7 @@ function handleStopStreamForOpenAI() {
 }
 
 
-export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runTool, setStreamedMessage, setLoading, provider) {
+export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runTool, setStreamedMessage, setLoading, provider, setStreamedCodeContent, setShowCodePreview) {
     let toolCalls = [];
     // let accumulatedJson = ""; // Not explicitly needed if each Gemini chunk is a full JSON
 
@@ -37,6 +37,8 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
     async function handleStreamEnd(_providerInternal) { // Renamed to avoid conflict with outer provider
         setStreamedMessage(content => {
             setLoading(false);
+            if (setShowCodePreview) setShowCodePreview(false); // Reset code preview state
+            if (setStreamedCodeContent) setStreamedCodeContent(""); // Clear streamed code content
             let msg = { role: "assistant", content };
             if (toolCalls.length > 0) {
                 msg.tool_calls = toolCalls;
@@ -74,11 +76,24 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
                 const streamEvent = new CustomEvent("stream-tool-calls");
                 window.dispatchEvent(streamEvent);
                 for (let tc of openAIToolCalls) {
-                    if (tc.id) {
+                    if (tc.id) { // New tool call
                         toolCalls.push({ id: tc.id, type: 'function', function: { name: tc.function.name || "", arguments: tc.function.arguments || "" } });
-                    } else {
+                        if (tc.function.name === "python") {
+                            if (setShowCodePreview) setShowCodePreview(true);
+                            if (tc.function.arguments && setStreamedCodeContent) {
+                                setStreamedCodeContent(oldCode => oldCode + tc.function.arguments);
+                            }
+                        }
+                    } else { // Appending to existing tool call (e.g. arguments)
                         if (tc.function && tc.function.arguments && toolCalls[tc.index]) {
                             toolCalls[tc.index].function.arguments += tc.function.arguments;
+                            // Check if this is for an ongoing python tool call
+                            if (toolCalls[tc.index].function.name === "python") {
+                                if (setShowCodePreview) setShowCodePreview(true); // Ensure it's true if we just identified it
+                                if (setStreamedCodeContent) {
+                                    setStreamedCodeContent(oldCode => oldCode + tc.function.arguments);
+                                }
+                            }
                         }
                     }
                 }
@@ -99,10 +114,17 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
                     const toolCallId = `call_${Date.now()}_${toolCallIdCounter++}`;
                     const streamEvent = new CustomEvent("stream-tool-calls");
                     window.dispatchEvent(streamEvent);
+                    const currentArguments = JSON.stringify(geminiFc.args || {});
                     toolCalls.push({
                         id: toolCallId, type: 'function',
-                        function: { name: geminiFc.name, arguments: JSON.stringify(geminiFc.args || {}) }
+                        function: { name: geminiFc.name, arguments: currentArguments }
                     });
+
+                    if (geminiFc.name === "python") {
+                        if (setShowCodePreview) setShowCodePreview(true);
+                        // Gemini usually sends full args; pretty-print the JSON string
+                        if (setStreamedCodeContent) setStreamedCodeContent(JSON.stringify(geminiFc.args || {}, null, 2));
+                    }
                 }
                 // Gemini stream end is handled by the loop finishing in the main function block
             } catch (e) {

@@ -15,6 +15,7 @@ import InteractiveChart from "components/InteractiveChart";
 import OnboardingDialog from "components/OnboardingDialog";
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import LLMStreamingHandler from 'utils/LLMStreamingHandler';
+import CodePreviewBox from 'components/CodePreviewBox';
 import { Settings2, Edit, Download, Github } from "lucide-react";
 import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS, prepareSchemaForGemini } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
@@ -27,6 +28,8 @@ function Index() {
     const [streamedMessage, setStreamedMessage] = useState("");
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [isToolCallsStreaming, setIsToolCallsStreaming] = useState(false);
+    const [streamedCodeContent, setStreamedCodeContent] = useState("");
+    const [showCodePreview, setShowCodePreview] = useState(false);
     const { isLoading, runPython, writeFile, readFile, deleteFile, resetGlobalContextState,
         pyodide, userSettings, setUserSettings, openInDrawer, messageFiles } = useContext(GlobalContext);
 
@@ -237,7 +240,7 @@ function Index() {
                     safetySettings
                 });
 
-                LLMStreamingHandler(streamResult.stream, onMessage, runTool, setStreamedMessage, setLoading, "gemini");
+                LLMStreamingHandler(streamResult.stream, onMessage, runTool, setStreamedMessage, setLoading, "gemini", setStreamedCodeContent, setShowCodePreview);
 
             } catch (error) {
                 console.error("Error calling Gemini API:", error);
@@ -276,7 +279,7 @@ function Index() {
                 method: "POST",
                 payload: JSON.stringify(payload)
             });
-            LLMStreamingHandler(source, onMessage, runTool, setStreamedMessage, setLoading, "openai");
+            LLMStreamingHandler(source, onMessage, runTool, setStreamedMessage, setLoading, "openai", setStreamedCodeContent, setShowCodePreview);
         }
         // No need to return updatedMessages if processMessages doesn't use setMessages' callback form
     }
@@ -451,6 +454,8 @@ function Index() {
             setStreamedMessage("");
             setLoading(false);
             setIsToolCallsStreaming(false);
+            setStreamedCodeContent(""); // Reset code content
+            setShowCodePreview(false); // Hide code preview
             resetGlobalContextState();
         }
     }
@@ -513,6 +518,10 @@ function Index() {
                     <ChatTextField onStop={handleStop} loading={loading} files={files} onFiles={handleFiles} onFileDelete={handleFileDelete} onMessage={handleMessage} placeholder={userSettings?.name ? `Hi ${userSettings.name}, how can I help?` : "Ask anything"} />
                 </ChatContainer>}>
                 <ChatContainer>
+                    {loading && !streamedMessage && !isToolCallsStreaming && messages.length > 0 && messages[messages.length - 1].role === 'user' && <div className="flex gap-2 justify-start">
+                        <LoadingText>Thinking...</LoadingText>
+                    </div>}
+
                     {messages.map((message, i) => {
                         return ((message.role === "assistant" || message.role === "user") && message.content) ? <div key={i} className={`flex gap-2 ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
                             <div className={`overflow-x-auto rounded-xl ${message.role === 'user' ? 'whitespace-break-spaces bg-gray-100 rounded-br-none max-w-[80%]' : 'text-black w-full bg-white'}`}>
@@ -528,13 +537,27 @@ function Index() {
                         </div>
                     </div>}
 
-                    {!isToolCallsStreaming && !streamedMessage && messages.length > 0 && (messages[messages.length - 1].role === 'tool' || messages[messages.length - 1].role === 'assistant' && messages[messages.length - 1].tool_calls) && <div className="flex gap-2 justify-start">
-                        <LoadingText>Executing</LoadingText>
-                    </div>}
+                    {/* Code Preview Box */}
+                    {showCodePreview && streamedCodeContent && (
+                        <div className="flex gap-2 justify-start w-full">
+                            <div className="w-full rounded-xl overflow-hidden bg-white text-black"> {/* Mimic assistant message bubble style */}
+                                <CodePreviewBox codeContent={streamedCodeContent} isStreaming={loading} />
+                            </div>
+                        </div>
+                    )}
 
-                    {isToolCallsStreaming && <div className="flex gap-2 justify-start">
-                        <LoadingText>Writing Python</LoadingText>
-                    </div>}
+                    {/* Tool execution / Writing Python (if not showing code preview) */}
+                    {!isToolCallsStreaming && !streamedMessage && !showCodePreview && messages.length > 0 && (messages[messages.length - 1].role === 'tool' || (messages[messages.length - 1].role === 'assistant' && messages[messages.length - 1].tool_calls)) && (
+                        <div className="flex gap-2 justify-start">
+                            <LoadingText>Executing</LoadingText>
+                        </div>
+                    )}
+
+                    {isToolCallsStreaming && !showCodePreview && (
+                        <div className="flex gap-2 justify-start">
+                            <LoadingText>Writing Python</LoadingText>
+                        </div>
+                    )}
 
                     {messages.length > 0 && <div className="h-[100px]" />}
                 </ChatContainer>
