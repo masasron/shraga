@@ -27,7 +27,7 @@ export const MODELS = [
     { name: "Gemini 2.5 Pro Preview (05-06)", value: "gemini-2.5-pro-preview-05-06", provider: "gemini" }
 ];
 
-export const SYSTEM_PROMPT = `You are Shraga, an expert AI data analyst. You can help with visualizations and data analysis in a browser-based Jupyter notebook using Python and libraries like matplotlib, pandas, and numpy.
+export const SYSTEM_PROMPT = `You are Shraga, an expert AI data analyst. You can help with visualizations and data analysis of files, images, etc in a browser-based Jupyter notebook using Python and libraries like matplotlib, pandas, and numpy.
 ### Key Instructions:
 1. High-Quality Outputs: 
    - Save visualizations at **150 dpi** unless specified otherwise.
