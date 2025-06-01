@@ -17,7 +17,8 @@ export const GlobalContextProvider = ({ children }) => {
     const [drawerComponent, setDrawerComponent] = useState(null);
 
     useEffect(function () {
-        if (userSettings?.model) {
+        // Ensure userSettings is not empty and has at least one key before saving
+        if (userSettings && Object.keys(userSettings).length > 0) {
             localStorage.setItem("userSettings", JSON.stringify(userSettings));
         }
     }, [userSettings]);
@@ -90,12 +91,21 @@ export const GlobalContextProvider = ({ children }) => {
 
     useEffect(function () {
         if (localStorage.userSettings) {
-            setUserSettings(JSON.parse(localStorage.userSettings));
+            const loadedSettings = JSON.parse(localStorage.userSettings);
+            setUserSettings({
+                name: loadedSettings.name || "",
+                model: loadedSettings.model || "gpt-4.1-mini",
+                openai_api_key: loadedSettings.openai_api_key || "",
+                provider: loadedSettings.provider || "openai",
+                gemini_api_key: loadedSettings.gemini_api_key || ""
+            });
         } else {
             setUserSettings({
                 name: "",
                 model: "gpt-4.1-mini",
-                openai_api_key: ""
+                openai_api_key: "",
+                provider: "openai",
+                gemini_api_key: ""
             });
         }
     }, []);

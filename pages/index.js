@@ -1,4 +1,4 @@
-import { SSE } from "sse.js";
+import { SSE } from 'sse.js';
 import Papa from 'papaparse';
 import Shraga from 'components/Shraga';
 import Tooltip from 'components/Tooltip';
@@ -13,9 +13,10 @@ import parseToolsHistory from "utils/parseToolsHistory";
 import AssistantMessage from "components/AssistantMessage";
 import InteractiveChart from "components/InteractiveChart";
 import OnboardingDialog from "components/OnboardingDialog";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import LLMStreamingHandler from 'utils/LLMStreamingHandler';
 import { Settings2, Edit, Download, Github } from "lucide-react";
-import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS } from 'utils/common';
+import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS, prepareSchemaForGemini } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
 import exportAsJuptyerNotebook from 'utils/exportAsJuptyerNotebook';
 
@@ -112,12 +113,15 @@ function Index() {
 
     function onMessage(message, isLast) {
         console.log('process message', message);
-        setMessages(oldMessages => [...oldMessages, message]);
-
+        setMessages(oldMessages => [...oldMessages, message]); // Add new message from LLM or tool
         scrollDown();
 
         if (message.role === 'tool' && isLast) {
-            processMessages();
+            // When the last tool call result is added, call processMessages with the updated list
+            setMessages(currentMessagesParam => {
+                processMessages(currentMessagesParam); // processMessages will now use this up-to-date list
+                return currentMessagesParam; // No actual state change here, just using the callback to get latest state
+            });
         }
     }
 
@@ -137,38 +141,144 @@ function Index() {
         return "Tool not found";
     }
 
-    function processMessages() {
-        setMessages(updatedMessages => {
-            let url = "https://api.openai.com/v1/chat/completions", auth = `Bearer ${userSettings.openai_api_key}`;
+    async function processMessages(currentMessagesParam) { // Added currentMessagesParam
+        const { provider, openai_api_key, gemini_api_key, model } = userSettings;
+        // No longer using 'messages' from useState directly for API call payload
+
+        if (provider === "gemini") {
+            if (!gemini_api_key) {
+                openInDrawer(<UserSettings />);
+                console.error("Gemini API key is missing.");
+                setLoading(false);
+                return;
+            }
+            try {
+                const genAI = new GoogleGenerativeAI(gemini_api_key);
+                const geminiModel = genAI.getGenerativeModel({ model: model || "gemini-pro" }); // Ensure model is passed
+
+                const generationConfig = {
+                    // temperature: 0.9, // Example
+                    // maxOutputTokens: 2048, // Example
+                };
+
+                const safetySettings = [
+                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                ];
+
+                const mappedGeminiMessages = currentMessagesParam.filter(msg => msg.role !== "system" && !msg.error)
+                    .map(msg => {
+                        if (msg.role === "user") {
+                            // Handle files for user messages if present
+                            const parts = [{ text: msg.content }];
+                            if (msg.files && msg.files.length > 0) {
+                                msg.files.forEach(file => {
+                                    // Assuming files are images for now as per common Gemini usage
+                                    // This part would need to be more robust if handling various file types
+                                    // and requires files to be uploaded/converted to base64 or accessible via URL
+                                    // For this example, let's assume file.base64 contains the base64 data
+                                    // and file.mimeType is available.
+                                    // This is a placeholder for actual file handling logic.
+                                    // parts.push({ inlineData: { mimeType: file.mimeType, data: file.base64 } });
+                                    console.warn("File handling for Gemini messages needs actual implementation for base64/URL data.");
+                                });
+                            }
+                            return { role: "user", parts };
+                        } else if (msg.role === "assistant") {
+                            if (msg.tool_calls && msg.tool_calls.length > 0) {
+                                return {
+                                    role: "model",
+                                    parts: msg.tool_calls.map(tc => ({
+                                        functionCall: {
+                                            name: tc.function.name,
+                                            args: JSON.parse(tc.function.arguments)
+                                        }
+                                    }))
+                                };
+                            }
+                            return { role: "model", parts: [{ text: msg.content }] };
+                        } else if (msg.role === "tool") {
+                            return {
+                                role: "function",
+                                parts: [{
+                                    functionResponse: {
+                                        name: msg.tool_call_id,
+                                        response: {
+                                            // name: msg.tool_call_id, // Gemini's 'name' in response usually refers to the function name that was called
+                                            name: msg.name || msg.tool_call_id, // Prefer msg.name if available (actual function name)
+                                            content: msg.content
+                                        }
+                                    }
+                                }]
+                            };
+                        }
+                        return null;
+                    }).filter(Boolean);
+
+                const systemInstruction = {
+                    parts: [{ text: SYSTEM_PROMPT }]
+                };
+
+                const geminiTools = MODEL_TOOLS.map(toolDef => ({
+                    name: toolDef.function.name,
+                    description: toolDef.function.description,
+                    parameters: toolDef.function.parameters ? prepareSchemaForGemini(toolDef.function.parameters) : undefined
+                }));
+
+                console.log("Gemini Request:", { contents: mappedGeminiMessages, tools: [{ functionDeclarations: geminiTools }], generationConfig, safetySettings });
+
+                const streamResult = await geminiModel.generateContentStream({
+                    systemInstruction,
+                    contents: mappedGeminiMessages,
+                    tools: [{ functionDeclarations: geminiTools }],
+                    generationConfig,
+                    safetySettings
+                });
+
+                LLMStreamingHandler(streamResult.stream, onMessage, runTool, setStreamedMessage, setLoading, "gemini");
+
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                setLoading(false);
+                onMessage({ role: "assistant", error: true, content: "Failed to call Gemini API: " + error.message });
+            }
+
+        } else { // OpenAI or other providers
+            // const { SSE } = await import('sse.js'); // Removed dynamic import
+            let url = "https://api.openai.com/v1/chat/completions";
+            let auth = `Bearer ${openai_api_key}`;
 
             const messageHistory = [
                 { role: "system", content: SYSTEM_PROMPT },
-                ...updatedMessages.filter(msg => !msg.error).map(m => {
+                ...currentMessagesParam.filter(msg => !msg.error).map(m => { // Use parameter
                     let msg = { role: m.role, content: m.content, tool_calls: m.tool_calls, tool_call_id: m.tool_call_id };
+                    // Ensure file information is handled appropriately for OpenAI if needed
+                    // OpenAI typically doesn't handle files directly in message content like Gemini Vision
+                    // It relies on text descriptions or URLs if vision model is used.
+                    // For this refactor, we assume msg.content already contains any file-related text.
                     if (!msg.tool_calls) delete msg.tool_calls;
                     if (!msg.tool_call_id) delete msg.tool_call_id;
                     return msg;
                 })
             ];
 
+            const payload = {
+                stream: true,
+                tools: MODEL_TOOLS,
+                messages: messageHistory,
+                model: model,
+            };
+
             const source = new SSE(url, {
-                headers: {
-                    "Authorization": auth,
-                    "Content-Type": "application/json",
-                },
+                headers: { "Authorization": auth, "Content-Type": "application/json" },
                 method: "POST",
-                payload: JSON.stringify({
-                    stream: true,
-                    tools: MODEL_TOOLS,
-                    messages: messageHistory,
-                    model: userSettings.model,
-                })
+                payload: JSON.stringify(payload)
             });
-
-            LLMStreamingHandler(source, onMessage, runTool, setStreamedMessage, setLoading);
-
-            return updatedMessages;
-        });
+            LLMStreamingHandler(source, onMessage, runTool, setStreamedMessage, setLoading, "openai");
+        }
+        // No need to return updatedMessages if processMessages doesn't use setMessages' callback form
     }
 
     function getProbableValueType(str) {
@@ -189,7 +299,9 @@ function Index() {
     }
 
     function handleMessage(message) {
-        if (userSettings.openai_api_key === "") {
+        const { provider, openai_api_key, gemini_api_key } = userSettings;
+
+        if ((provider === "openai" && !openai_api_key) || (provider === "gemini" && !gemini_api_key)) {
             openInDrawer(<UserSettings />);
             return false;
         }
@@ -216,8 +328,16 @@ function Index() {
             return [];
         });
 
-        setMessages(oldMessages => [...oldMessages, { role: 'user', content: message }]);
-        processMessages();
+
+        setMessages(oldMessages => {
+            const newMessages = [
+                ...oldMessages,
+                { role: 'user', content: message }
+            ];
+            processMessages(newMessages);   // always gets the latest list
+            return newMessages;
+        });
+
         scrollDown();
 
         return true;
@@ -364,7 +484,8 @@ function Index() {
             <ChatLayout
                 header={<>
                     <select value={userSettings.model} onChange={handleModelUpdate} className="p-2 font-bold text-md hover:bg-gray-100 transition-colors rounded-lg">
-                        {MODELS.map(model => <option key={model.value} value={model.value}>{model.name}</option>)}
+                        {MODELS.filter(m => (m.provider || "openai") === (userSettings.provider || "openai"))
+                            .map(model => <option key={model.value} value={model.value}>{model.name}</option>)}
                     </select>
                     <div className="flex-1" />
                     {messages.length > 1 && <Tooltip content="Export as Jupyter Notebook" position="bottom">
