@@ -1,3 +1,4 @@
+import { SSE } from 'sse.js';
 import Papa from 'papaparse';
 import Shraga from 'components/Shraga';
 import Tooltip from 'components/Tooltip';
@@ -231,7 +232,7 @@ function Index() {
             }
 
         } else { // OpenAI or other providers
-            const { SSE } = await import('sse.js'); // Dynamically import SSE for OpenAI
+            // const { SSE } = await import('sse.js'); // Removed dynamic import
             let url = "https://api.openai.com/v1/chat/completions";
             let auth = `Bearer ${openai_api_key}`;
 
