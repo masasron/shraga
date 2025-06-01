@@ -18,6 +18,11 @@ export const MODELS = [
     {
         name: "o4-mini",
         value: "o4-mini"
+    },
+    {
+        name: "Gemini Pro",
+        value: "gemini-pro",
+        provider: "gemini"
     }
 ];
 
@@ -68,4 +73,20 @@ export const setUserClipboard = (text, callback) => {
         document.body.removeChild(textArea);
     }
     callback();
+}
+
+export function convertSchemaTypesToUpper(schema) {
+    if (!schema || typeof schema !== 'object') return schema;
+    const newSchema = Array.isArray(schema) ? [] : {}; // Handle arrays and objects
+    for (const key in schema) {
+        if (Object.prototype.hasOwnProperty.call(schema, key)) { // Ensure own properties
+            if (key === 'type' && typeof schema[key] === 'string') {
+                newSchema[key] = schema[key].toUpperCase();
+            } else {
+                // Recursively call for nested objects/arrays
+                newSchema[key] = convertSchemaTypesToUpper(schema[key]);
+            }
+        }
+    }
+    return newSchema;
 }

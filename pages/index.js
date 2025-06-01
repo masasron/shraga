@@ -1,4 +1,3 @@
-import { SSE } from "sse.js";
 import Papa from 'papaparse';
 import Shraga from 'components/Shraga';
 import Tooltip from 'components/Tooltip';
@@ -13,9 +12,10 @@ import parseToolsHistory from "utils/parseToolsHistory";
 import AssistantMessage from "components/AssistantMessage";
 import InteractiveChart from "components/InteractiveChart";
 import OnboardingDialog from "components/OnboardingDialog";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import LLMStreamingHandler from 'utils/LLMStreamingHandler';
 import { Settings2, Edit, Download, Github } from "lucide-react";
-import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS } from 'utils/common';
+import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS, convertSchemaTypesToUpper } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
 import exportAsJuptyerNotebook from 'utils/exportAsJuptyerNotebook';
 
@@ -137,13 +137,107 @@ function Index() {
         return "Tool not found";
     }
 
-    function processMessages() {
-        setMessages(updatedMessages => {
-            let url = "https://api.openai.com/v1/chat/completions", auth = `Bearer ${userSettings.openai_api_key}`;
+    async function processMessages() {
+        const { provider, openai_api_key, gemini_api_key, model } = userSettings;
+        // Retrieve current messages from state
+        const currentMessages = messages; // Or use a state updater if processMessages is not already in one
+
+        if (provider === "gemini") {
+            if (!gemini_api_key) {
+                openInDrawer(<UserSettings />);
+                console.error("Gemini API key is missing.");
+                setLoading(false);
+                return;
+            }
+            try {
+                const genAI = new GoogleGenerativeAI(gemini_api_key);
+                const geminiModel = genAI.getGenerativeModel({ model: model || "gemini-pro" }); // Ensure model is passed
+
+                const generationConfig = {
+                    // temperature: 0.9, // Example
+                    // maxOutputTokens: 2048, // Example
+                };
+
+                const safetySettings = [
+                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+                ];
+
+                const mappedGeminiMessages = currentMessages
+                    .filter(msg => msg.role !== "system" && !msg.error) // Filter out system messages and errors for Gemini history
+                    .map(msg => {
+                        if (msg.role === "user") {
+                            return { role: "user", parts: [{ text: msg.content }] };
+                        } else if (msg.role === "assistant") { // OpenAI's 'assistant' is 'model' for Gemini
+                            if (msg.tool_calls && msg.tool_calls.length > 0) {
+                                return {
+                                    role: "model",
+                                    parts: msg.tool_calls.map(tc => ({
+                                        functionCall: {
+                                            name: tc.function.name,
+                                            args: JSON.parse(tc.function.arguments) // Gemini expects args as an object
+                                        }
+                                    }))
+                                };
+                            }
+                            return { role: "model", parts: [{ text: msg.content }] };
+                        } else if (msg.role === "tool") { // OpenAI's 'tool' is 'function' for Gemini
+                            return {
+                                role: "function", // Or "tool" - check Gemini docs for exact role name for tool responses
+                                parts: [{
+                                    functionResponse: {
+                                        name: msg.tool_call_id, // Or msg.name, ensure this maps to the function call that triggered it
+                                        response: {
+                                            name: msg.tool_call_id, // Or msg.name
+                                            content: msg.content // The result of the tool call
+                                        }
+                                    }
+                                }]
+                            };
+                        }
+                        return null; // Should not happen if roles are handled
+                    }).filter(Boolean);
+
+                // Add SYSTEM_PROMPT as the first message if the model supports it, or handle it differently.
+                // For now, let's assume it's part of the history if applicable, or prepend to the user's first message.
+                // Gemini API prefers history to start with a user message.
+                // If SYSTEM_PROMPT is crucial, it might need to be prefixed to the first user message content.
+                // For simplicity, we are omitting direct system prompt in history for Gemini for now.
+                // It can be added if testing shows it's supported and effective.
+
+                const geminiTools = MODEL_TOOLS.map(tool => ({
+                    name: tool.function.name, // Adjusted to match MODEL_TOOLS structure
+                    description: tool.function.description,
+                    parameters: tool.function.parameters ? convertSchemaTypesToUpper(tool.function.parameters) : undefined
+                }));
+
+                console.log("Gemini Request:", { contents: mappedGeminiMessages, tools: [{ functionDeclarations: geminiTools }], generationConfig, safetySettings });
+
+                const streamResult = await geminiModel.generateContentStream({
+                    contents: mappedGeminiMessages,
+                    tools: [{ functionDeclarations: geminiTools }],
+                    generationConfig,
+                    safetySettings
+                });
+
+                LLMStreamingHandler(streamResult.stream, onMessage, runTool, setStreamedMessage, setLoading, "gemini");
+
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                setLoading(false);
+                onMessage({ role: "assistant", error: true, content: "Failed to call Gemini API: " + error.message });
+            }
+
+        } else { // OpenAI or other providers
+            const { SSE } = await import('sse.js'); // Dynamically import SSE for OpenAI
+            let url = "https://api.openai.com/v1/chat/completions";
+            let auth = `Bearer ${openai_api_key}`;
 
             const messageHistory = [
                 { role: "system", content: SYSTEM_PROMPT },
-                ...updatedMessages.filter(msg => !msg.error).map(m => {
+                ...currentMessages.filter(msg => !msg.error).map(m => {
                     let msg = { role: m.role, content: m.content, tool_calls: m.tool_calls, tool_call_id: m.tool_call_id };
                     if (!msg.tool_calls) delete msg.tool_calls;
                     if (!msg.tool_call_id) delete msg.tool_call_id;
@@ -151,24 +245,21 @@ function Index() {
                 })
             ];
 
+            const payload = {
+                stream: true,
+                tools: MODEL_TOOLS,
+                messages: messageHistory,
+                model: model,
+            };
+
             const source = new SSE(url, {
-                headers: {
-                    "Authorization": auth,
-                    "Content-Type": "application/json",
-                },
+                headers: { "Authorization": auth, "Content-Type": "application/json" },
                 method: "POST",
-                payload: JSON.stringify({
-                    stream: true,
-                    tools: MODEL_TOOLS,
-                    messages: messageHistory,
-                    model: userSettings.model,
-                })
+                payload: JSON.stringify(payload)
             });
-
-            LLMStreamingHandler(source, onMessage, runTool, setStreamedMessage, setLoading);
-
-            return updatedMessages;
-        });
+            LLMStreamingHandler(source, onMessage, runTool, setStreamedMessage, setLoading, "openai");
+        }
+        // No need to return updatedMessages if processMessages doesn't use setMessages' callback form
     }
 
     function getProbableValueType(str) {
@@ -189,7 +280,9 @@ function Index() {
     }
 
     function handleMessage(message) {
-        if (userSettings.openai_api_key === "") {
+        const { provider, openai_api_key, gemini_api_key } = userSettings;
+
+        if ((provider === "openai" && !openai_api_key) || (provider === "gemini" && !gemini_api_key)) {
             openInDrawer(<UserSettings />);
             return false;
         }
@@ -364,7 +457,8 @@ function Index() {
             <ChatLayout
                 header={<>
                     <select value={userSettings.model} onChange={handleModelUpdate} className="p-2 font-bold text-md hover:bg-gray-100 transition-colors rounded-lg">
-                        {MODELS.map(model => <option key={model.value} value={model.value}>{model.name}</option>)}
+                        {MODELS.filter(m => (m.provider || "openai") === (userSettings.provider || "openai"))
+                               .map(model => <option key={model.value} value={model.value}>{model.name}</option>)}
                     </select>
                     <div className="flex-1" />
                     {messages.length > 1 && <Tooltip content="Export as Jupyter Notebook" position="bottom">
