@@ -94,7 +94,7 @@ export const GlobalContextProvider = ({ children }) => {
         } else {
             setUserSettings({
                 name: "",
-                model: "gpt-4o-mini",
+                model: "gpt-4.1-mini",
                 openai_api_key: ""
             });
         }
@@ -170,13 +170,18 @@ export const GlobalContextProvider = ({ children }) => {
         }
     };
 
+    const resetGlobalContextState = () => {
+        setOutput(null);
+        setMessageFiles(new Map());
+    };
+
     return (
         <GlobalContext.Provider value={{
             userSettings, setUserSettings, openInDrawer,
             drawerIsOpen, setDrawerIsOpen, drawerComponent, setDrawerComponent,
             pyodide, output, setOutput, deleteFile,
             isLoading, writeFile, readFile, runPython,
-            messageFiles, setMessageFiles
+            messageFiles, setMessageFiles, resetGlobalContextState
         }}>
             {children}
             <Drawer open={drawerIsOpen} onOpenChange={handleDrawerOpenChange}>
