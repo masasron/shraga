@@ -168,8 +168,7 @@ function Index() {
                     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
                 ];
 
-                const mappedGeminiMessages = currentMessagesParam // Use parameter
-                    .filter(msg => msg.role !== "system" && !msg.error)
+                const mappedGeminiMessages = currentMessagesParam.filter(msg => msg.role !== "system" && !msg.error)
                     .map(msg => {
                         if (msg.role === "user") {
                             // Handle files for user messages if present
@@ -218,12 +217,9 @@ function Index() {
                         return null;
                     }).filter(Boolean);
 
-                // Add SYSTEM_PROMPT as the first message if the model supports it, or handle it differently.
-                // For now, let's assume it's part of the history if applicable, or prepend to the user's first message.
-                // Gemini API prefers history to start with a user message.
-                // If SYSTEM_PROMPT is crucial, it might need to be prefixed to the first user message content.
-                // For simplicity, we are omitting direct system prompt in history for Gemini for now.
-                // It can be added if testing shows it's supported and effective.
+                const systemInstruction = {
+                    parts: [{ text: SYSTEM_PROMPT }]
+                };
 
                 const geminiTools = MODEL_TOOLS.map(toolDef => ({
                     name: toolDef.function.name,
@@ -234,6 +230,7 @@ function Index() {
                 console.log("Gemini Request:", { contents: mappedGeminiMessages, tools: [{ functionDeclarations: geminiTools }], generationConfig, safetySettings });
 
                 const streamResult = await geminiModel.generateContentStream({
+                    systemInstruction,
                     contents: mappedGeminiMessages,
                     tools: [{ functionDeclarations: geminiTools }],
                     generationConfig,
@@ -331,8 +328,16 @@ function Index() {
             return [];
         });
 
-        setMessages(oldMessages => [...oldMessages, { role: 'user', content: message }]);
-        processMessages();
+
+        setMessages(oldMessages => {
+            const newMessages = [
+                ...oldMessages,
+                { role: 'user', content: message }
+            ];
+            processMessages(newMessages);   // always gets the latest list
+            return newMessages;
+        });
+
         scrollDown();
 
         return true;
@@ -480,7 +485,7 @@ function Index() {
                 header={<>
                     <select value={userSettings.model} onChange={handleModelUpdate} className="p-2 font-bold text-md hover:bg-gray-100 transition-colors rounded-lg">
                         {MODELS.filter(m => (m.provider || "openai") === (userSettings.provider || "openai"))
-                               .map(model => <option key={model.value} value={model.value}>{model.name}</option>)}
+                            .map(model => <option key={model.value} value={model.value}>{model.name}</option>)}
                     </select>
                     <div className="flex-1" />
                     {messages.length > 1 && <Tooltip content="Export as Jupyter Notebook" position="bottom">

@@ -1,3 +1,5 @@
+import { SSE } from 'sse.js'; // Ensure you have sse.js installed or available in your project
+
 // Keep track of a unique ID for tool calls, especially for Gemini
 let toolCallIdCounter = 0;
 
@@ -124,15 +126,13 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
             } catch (error) {
                 console.error("Error processing Gemini stream:", error);
                 if (loading) { // Check if still loading, to prevent multiple error handlings
-                   setLoading(false);
-                   onMessage({ role: "assistant", error: true, content: "An error occurred with the Gemini stream: " + error.message });
+                    setLoading(false);
+                    onMessage({ role: "assistant", error: true, content: "An error occurred with the Gemini stream: " + error.message });
                 }
             }
         })();
         return; // Important: return to prevent EventSource logic from running for Gemini
     } else if (provider === "openai") {
-        // Existing EventSource logic for OpenAI
-        const { SSE } = require('sse.js'); // Ensure SSE is available
         currentEventSource = new SSE(sourceOrStreamUrl, { // sourceOrStreamUrl is the URL string
             headers: JSON.parse(JSON.stringify(arguments[0].headers || {})), // Kludgy way to pass headers if needed, or adjust signature
             method: "POST", // This was part of old setup, ensure it's passed correctly
@@ -158,7 +158,7 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
 
         currentEventSource.addEventListener("readystatechange", event => {
             if (event.readyState >= 2) { // DONE, CLOSED
-                 // Check if it's already been handled by [DONE]
+                // Check if it's already been handled by [DONE]
                 if (loading && currentEventSource && currentEventSource.readyState === EventSource.CLOSED) { // EventSource.CLOSED is 2
                     console.log("OpenAI EventSource closed, calling handleStreamEnd.");
                     handleStreamEnd(provider); // Ensure stream end is called if connection closes abruptly
@@ -170,7 +170,7 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
 
         currentEventSource.addEventListener("error", error => {
             console.error("OpenAI EventSource error:", error);
-             if (loading) {
+            if (loading) {
                 setLoading(false);
                 setStreamedMessage("");
                 onMessage({ role: "assistant", error: true, content: "An error occurred while streaming OpenAI response." });
@@ -180,7 +180,7 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
         });
 
         if (currentEventSource.readyState === EventSource.CONNECTING) { // EventSource.CONNECTING is 0
-             currentEventSource.stream();
+            currentEventSource.stream();
         }
         setLoading(true);
     }
