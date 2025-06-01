@@ -1,50 +1,128 @@
 // components/CodePreviewBox.js
-import React, { useEffect, useRef } from 'react';
-import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneLight } from "react-syntax-highlighter/dist/cjs/styles/prism"; // Using cjs path as specified
+import React, { useEffect, useRef, useMemo } from 'react';
 import cn from 'utils/cn';
+import { oneLight } from "react-syntax-highlighter/dist/cjs/styles/prism";
+import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
 
 const CodePreviewBox = ({ codeContent, isStreaming }) => {
-    const scrollRef = useRef(null);
+    const containerRef = useRef(null);
+    const syntaxHighlighterRef = useRef(null);
+
+    // Memoize the syntax highlighter to prevent unnecessary re-renders
+    const memoizedSyntaxHighlighter = useMemo(() => (
+        <SyntaxHighlighter
+            ref={syntaxHighlighterRef}
+            language="python"
+            style={oneLight}
+            className="text-sm"
+            customStyle={{
+                margin: 0,
+                background: 'transparent',
+                fontSize: '0.875rem' // text-sm equivalent
+            }}
+            codeTagProps={{
+                style: {
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", monospace'
+                }
+            }}
+            PreTag={({ children, ...props }) => (
+                <pre {...props} style={{ margin: 0, padding: 0 }}>
+                    {children}
+                </pre>
+            )}
+        >
+            {codeContent}
+        </SyntaxHighlighter>
+    ), [codeContent]);
 
     useEffect(() => {
-        if (scrollRef.current) {
-            // When using SyntaxHighlighter, the actual scrollable element might be different.
-            // It often wraps content in a <pre> then <code>.
-            // We might need to adjust scrollRef to target the inner <pre> if SyntaxHighlighter doesn't expose it directly,
-            // or ensure the div with scrollRef can scroll its SyntaxHighlighter child.
-            // For now, let's assume SyntaxHighlighter itself or its direct output is scrollable within the div.
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        if (!containerRef.current) return;
+
+        const scrollToBottom = () => {
+            // Use requestAnimationFrame to ensure DOM has updated
+            requestAnimationFrame(() => {
+                if (containerRef.current) {
+                    containerRef.current.scrollTop = containerRef.current.scrollHeight;
+                }
+            });
+        };
+
+        // Initial scroll
+        scrollToBottom();
+
+        // If streaming, set up a small delay to handle rapid updates
+        if (isStreaming) {
+            const timeoutId = setTimeout(scrollToBottom, 50);
+            return () => clearTimeout(timeoutId);
         }
-    }, [codeContent]);
+    }, [codeContent, isStreaming]);
+
+    // Alternative approach: Use intersection observer to smooth scroll behavior
+    useEffect(() => {
+        if (!isStreaming || !containerRef.current) return;
+
+        const container = containerRef.current;
+        let isUserScrolling = false;
+        let scrollTimeout;
+
+        const handleScroll = () => {
+            isUserScrolling = true;
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                isUserScrolling = false;
+            }, 150);
+        };
+
+        const scrollToBottomSmooth = () => {
+            if (!isUserScrolling && container) {
+                const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+                if (isNearBottom || container.scrollTop === 0) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+
+        // Use MutationObserver to detect content changes
+        const observer = new MutationObserver(scrollToBottomSmooth);
+        observer.observe(container, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            observer.disconnect();
+            clearTimeout(scrollTimeout);
+        };
+    }, [isStreaming]);
 
     return (
         <div
-            className={cn(
-                "relative h-[200px] border border-gray-300 rounded-md bg-gray-50 overflow-hidden",
-                // Removed p-2 from parent, will be handled by SyntaxHighlighter or its container if needed
-            )}
-        >
+            className="relative h-[200px] rounded-md bg-gray-50 overflow-hidden">
             <div
-                ref={scrollRef}
-                className="absolute inset-0 overflow-y-auto" // Removed p-2, SyntaxHighlighter will have its own padding or can be styled
+                ref={containerRef}
+                className="absolute p-3 inset-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+                style={{
+                    scrollBehavior: isStreaming ? 'auto' : 'smooth'
+                }}
             >
-                <SyntaxHighlighter
-                    language="python"
-                    style={oneLight}
-                    className="text-sm h-full" // Ensure it fills height for scrolling, and apply text-sm
-                    customStyle={{ margin: 0, padding: "0.5rem" }} // Remove default margin, add padding
-                    codeTagProps={{ style: { whiteSpace: 'pre-wrap', fontFamily: 'monospace' } }} // Ensure pre-wrap and monospace font
-                >
-                    {codeContent}
-                </SyntaxHighlighter>
-                {isStreaming && <span className="animate-pulse absolute bottom-2 right-2">...</span>}
-                {/* Moved streaming indicator to be absolutely positioned within the main div */}
+                {memoizedSyntaxHighlighter}
+                {isStreaming && (
+                    <div className="sticky bottom-0 right-0 flex justify-end p-2">
+                        <span className="animate-pulse bg-gray-100 px-2 py-1 rounded text-xs text-gray-500">
+                            ...
+                        </span>
+                    </div>
+                )}
             </div>
-            {/* Top blur */}
-            <div className="absolute top-0 left-0 right-0 h-5 bg-gradient-to-b from-gray-50 via-gray-50/70 to-transparent pointer-events-none z-10" />
-            {/* Bottom blur */}
-            <div className="absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-gray-50 via-gray-50/70 to-transparent pointer-events-none z-10" />
+
+            {/* Gradient overlays */}
+            <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-50 via-gray-50/80 to-transparent pointer-events-none z-10" />
+            <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-gray-50 via-gray-50/80 to-transparent pointer-events-none z-10" />
         </div>
     );
 };

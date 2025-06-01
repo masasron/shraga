@@ -35,30 +35,27 @@ function extractCodeFromJsonString(jsonString) {
     }
 
     // Heuristic for {"code": "..."} structure
-    if (trimmedString.startsWith('{"code":')) {
-        let tempStr = trimmedString;
-        // Check if the code content itself is missing a closing quote
-        // Regex: matches '{"code":"<any_char_except_quote_or_backslash_or_control>' (i.e. unclosed string)
-        // or '{"code":"<any_char_including_escaped_quotes> unclosed_at_end
-        const incompleteStringRegex = /^\{\s*"code"\s*:\s*"([^"\\]|\.)*$/; // Corrected regex
-        if (incompleteStringRegex.test(tempStr)) {
-            tempStr += '"'; // Add closing quote for the code string literal
-        }
-
-        // Ensure the object itself is closed
-        if (!tempStr.endsWith('}')) {
-            tempStr += '}';
-        }
-
+    if (trimmedString.startsWith('{"code":"')) {
         try {
+            let tempStr = trimmedString + "\"}";
             const parsed = JSON.parse(tempStr);
             if (parsed && typeof parsed.code === 'string') {
                 return parsed.code;
             }
-        } catch (e) {
-            // Heuristic failed, return original string
-            return jsonString;
+        } catch {
         }
+
+        try {
+            let tempStr = trimmedString + "}";
+            const parsed = JSON.parse(tempStr);
+            if (parsed && typeof parsed.code === 'string') {
+                return parsed.code;
+            }
+        } catch {
+        }
+
+        // If it still fails, return original string
+        return jsonString;
     }
 
     // Fallback for any other case
@@ -129,7 +126,7 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
                         toolCalls.push({ id: tc.id, type: 'function', function: { name: tc.function.name || "", arguments: tc.function.arguments || "" } });
                         // Correctly reference the newly added tool call
                         const currentToolCall = toolCalls[toolCalls.length - 1];
-                        if (currentToolCall.function.name === "python") {
+                        if (currentToolCall.function.name === "run_python") {
                             if (setShowCodePreview) setShowCodePreview(true);
                             if (setStreamedCodeContent) {
                                 setStreamedCodeContent(extractCodeFromJsonString(currentToolCall.function.arguments));
@@ -139,7 +136,7 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
                         if (tc.function && tc.function.arguments && toolCalls[tc.index]) {
                             toolCalls[tc.index].function.arguments += tc.function.arguments;
                             // Check if this is for an ongoing python tool call
-                            if (toolCalls[tc.index].function.name === "python") {
+                            if (toolCalls[tc.index].function.name === "run_python") {
                                 if (setShowCodePreview) setShowCodePreview(true); // Ensure it's true if we just identified it
                                 if (setStreamedCodeContent) {
                                     setStreamedCodeContent(extractCodeFromJsonString(toolCalls[tc.index].function.arguments));
@@ -211,11 +208,15 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
         })();
         return; // Important: return to prevent EventSource logic from running for Gemini
     } else if (provider === "openai") {
-        currentEventSource = new SSE(sourceOrStreamUrl, { // sourceOrStreamUrl is the URL string
-            headers: JSON.parse(JSON.stringify(arguments[0].headers || {})), // Kludgy way to pass headers if needed, or adjust signature
-            method: "POST", // This was part of old setup, ensure it's passed correctly
-            payload: JSON.parse(JSON.stringify(arguments[0].payload || {})), // Same for payload
-        });
+        if (typeof sourceOrStreamUrl !== "string") {
+            currentEventSource = sourceOrStreamUrl; // sourceOrStreamUrl is the EventSource instance
+        } else {
+            currentEventSource = new SSE(sourceOrStreamUrl, { // sourceOrStreamUrl is the URL string
+                headers: JSON.parse(JSON.stringify(arguments[0].headers || {})), // Kludgy way to pass headers if needed, or adjust signature
+                method: "POST", // This was part of old setup, ensure it's passed correctly
+                payload: JSON.parse(JSON.stringify(arguments[0].payload || {})), // Same for payload
+            });
+        }
 
         // Make sure arguments[0].headers and arguments[0].payload are correctly passed or refactor how SSE is initialized
         // This part is tricky as the original SSE initialization was in `pages/index.js`

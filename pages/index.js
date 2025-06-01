@@ -131,7 +131,7 @@ function Index() {
     async function runTool(toolName, args) {
         console.log('>>> Running tool:', toolName, args);
 
-        if (toolName === "python") {
+        if (toolName === "run_python") {
             try {
                 return await runPython(args.code.trim());
             } catch (error) {
@@ -518,10 +518,6 @@ function Index() {
                     <ChatTextField onStop={handleStop} loading={loading} files={files} onFiles={handleFiles} onFileDelete={handleFileDelete} onMessage={handleMessage} placeholder={userSettings?.name ? `Hi ${userSettings.name}, how can I help?` : "Ask anything"} />
                 </ChatContainer>}>
                 <ChatContainer>
-                    {loading && !streamedMessage && !isToolCallsStreaming && messages.length > 0 && messages[messages.length - 1].role === 'user' && <div className="flex gap-2 justify-start">
-                        <LoadingText>Thinking...</LoadingText>
-                    </div>}
-
                     {messages.map((message, i) => {
                         return ((message.role === "assistant" || message.role === "user") && message.content) ? <div key={i} className={`flex gap-2 ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
                             <div className={`overflow-x-auto rounded-xl ${message.role === 'user' ? 'whitespace-break-spaces bg-gray-100 rounded-br-none max-w-[80%]' : 'text-black w-full bg-white'}`}>
@@ -558,6 +554,10 @@ function Index() {
                             <LoadingText>Writing Python</LoadingText>
                         </div>
                     )}
+
+                    {loading && !streamedMessage && !isToolCallsStreaming && messages.length > 0 && messages[messages.length - 1].role === 'user' && <div className="flex gap-2 justify-start">
+                        <LoadingText>Thinking...</LoadingText>
+                    </div>}
 
                     {messages.length > 0 && <div className="h-[100px]" />}
                 </ChatContainer>

@@ -47,7 +47,7 @@ export const MODEL_TOOLS = [
         type: "function",
         function: {
             strict: true,
-            name: "python",
+            name: "run_python",
             description: "Executes Python code in a stateful Jupyter notebook environment. You can send Python code to be executed, and it will return the output of the execution. Common libraries available include pandas, numpy, matplotlib, and others.",
             parameters: {
                 type: "object",
