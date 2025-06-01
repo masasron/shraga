@@ -94,7 +94,7 @@ export const GlobalContextProvider = ({ children }) => {
         } else {
             setUserSettings({
                 name: "",
-                model: "gpt-4o-mini",
+                model: "gpt-4.1-mini",
                 openai_api_key: ""
             });
         }

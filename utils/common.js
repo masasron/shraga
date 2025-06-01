@@ -1,19 +1,23 @@
 export const MODELS = [
     {
-        name: "ChatGPT 4o mini",
-        value: "gpt-4o-mini"
+        name: "gpt-4.1-mini",
+        value: "gpt-4.1-mini"
     },
     {
-        name: "ChatGPT 4o",
-        value: "gpt-4o"
+        name: "gpt-4.1-nano",
+        value: "gpt-4.1-nano"
     },
     {
-        name: "o3 Mini",
-        value: "o3-mini"
+        name: "gpt-4.1",
+        value: "gpt-4.1"
     },
     {
-        name: "o1",
-        value: "o1"
+        name: "o3",
+        value: "o3"
+    },
+    {
+        name: "o4-mini",
+        value: "o4-mini"
     }
 ];
 
