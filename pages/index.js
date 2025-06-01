@@ -26,7 +26,7 @@ function Index() {
     const [streamedMessage, setStreamedMessage] = useState("");
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [isToolCallsStreaming, setIsToolCallsStreaming] = useState(false);
-    const { isLoading, runPython, writeFile, readFile, deleteFile,
+    const { isLoading, runPython, writeFile, readFile, deleteFile, resetGlobalContextState,
         pyodide, userSettings, setUserSettings, openInDrawer, messageFiles } = useContext(GlobalContext);
 
     useEffect(function () {
@@ -322,7 +322,16 @@ function Index() {
 
     function handleStartNewChat() {
         if (messages.length === 0 || confirm("Are you sure you want to start a new chat?\nThis will clear the current chat history.")) {
-            window.location.reload(true);
+            // Iterate over files and delete them
+            files.forEach(file => {
+                deleteFile(`/data/${file.unique_name}`);
+            });
+            setMessages([]);
+            setFiles([]);
+            setStreamedMessage("");
+            setLoading(false);
+            setIsToolCallsStreaming(false);
+            resetGlobalContextState();
         }
     }
 

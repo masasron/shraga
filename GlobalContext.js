@@ -170,13 +170,18 @@ export const GlobalContextProvider = ({ children }) => {
         }
     };
 
+    const resetGlobalContextState = () => {
+        setOutput(null);
+        setMessageFiles(new Map());
+    };
+
     return (
         <GlobalContext.Provider value={{
             userSettings, setUserSettings, openInDrawer,
             drawerIsOpen, setDrawerIsOpen, drawerComponent, setDrawerComponent,
             pyodide, output, setOutput, deleteFile,
             isLoading, writeFile, readFile, runPython,
-            messageFiles, setMessageFiles
+            messageFiles, setMessageFiles, resetGlobalContextState
         }}>
             {children}
             <Drawer open={drawerIsOpen} onOpenChange={handleDrawerOpenChange}>
