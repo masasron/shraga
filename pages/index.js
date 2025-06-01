@@ -113,12 +113,15 @@ function Index() {
 
     function onMessage(message, isLast) {
         console.log('process message', message);
-        setMessages(oldMessages => [...oldMessages, message]);
-
+        setMessages(oldMessages => [...oldMessages, message]); // Add new message from LLM or tool
         scrollDown();
 
         if (message.role === 'tool' && isLast) {
-            processMessages();
+            // When the last tool call result is added, call processMessages with the updated list
+            setMessages(currentMessagesParam => {
+                processMessages(currentMessagesParam); // processMessages will now use this up-to-date list
+                return currentMessagesParam; // No actual state change here, just using the callback to get latest state
+            });
         }
     }
 
@@ -138,10 +141,9 @@ function Index() {
         return "Tool not found";
     }
 
-    async function processMessages() {
+    async function processMessages(currentMessagesParam) { // Added currentMessagesParam
         const { provider, openai_api_key, gemini_api_key, model } = userSettings;
-        // Retrieve current messages from state
-        const currentMessages = messages; // Or use a state updater if processMessages is not already in one
+        // No longer using 'messages' from useState directly for API call payload
 
         if (provider === "gemini") {
             if (!gemini_api_key) {
@@ -166,39 +168,54 @@ function Index() {
                     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
                 ];
 
-                const mappedGeminiMessages = currentMessages
-                    .filter(msg => msg.role !== "system" && !msg.error) // Filter out system messages and errors for Gemini history
+                const mappedGeminiMessages = currentMessagesParam // Use parameter
+                    .filter(msg => msg.role !== "system" && !msg.error)
                     .map(msg => {
                         if (msg.role === "user") {
-                            return { role: "user", parts: [{ text: msg.content }] };
-                        } else if (msg.role === "assistant") { // OpenAI's 'assistant' is 'model' for Gemini
+                            // Handle files for user messages if present
+                            const parts = [{ text: msg.content }];
+                            if (msg.files && msg.files.length > 0) {
+                                msg.files.forEach(file => {
+                                    // Assuming files are images for now as per common Gemini usage
+                                    // This part would need to be more robust if handling various file types
+                                    // and requires files to be uploaded/converted to base64 or accessible via URL
+                                    // For this example, let's assume file.base64 contains the base64 data
+                                    // and file.mimeType is available.
+                                    // This is a placeholder for actual file handling logic.
+                                    // parts.push({ inlineData: { mimeType: file.mimeType, data: file.base64 } });
+                                    console.warn("File handling for Gemini messages needs actual implementation for base64/URL data.");
+                                });
+                            }
+                            return { role: "user", parts };
+                        } else if (msg.role === "assistant") {
                             if (msg.tool_calls && msg.tool_calls.length > 0) {
                                 return {
                                     role: "model",
                                     parts: msg.tool_calls.map(tc => ({
                                         functionCall: {
                                             name: tc.function.name,
-                                            args: JSON.parse(tc.function.arguments) // Gemini expects args as an object
+                                            args: JSON.parse(tc.function.arguments)
                                         }
                                     }))
                                 };
                             }
                             return { role: "model", parts: [{ text: msg.content }] };
-                        } else if (msg.role === "tool") { // OpenAI's 'tool' is 'function' for Gemini
+                        } else if (msg.role === "tool") {
                             return {
-                                role: "function", // Or "tool" - check Gemini docs for exact role name for tool responses
+                                role: "function",
                                 parts: [{
                                     functionResponse: {
-                                        name: msg.tool_call_id, // Or msg.name, ensure this maps to the function call that triggered it
+                                        name: msg.tool_call_id,
                                         response: {
-                                            name: msg.tool_call_id, // Or msg.name
-                                            content: msg.content // The result of the tool call
+                                            // name: msg.tool_call_id, // Gemini's 'name' in response usually refers to the function name that was called
+                                            name: msg.name || msg.tool_call_id, // Prefer msg.name if available (actual function name)
+                                            content: msg.content
                                         }
                                     }
                                 }]
                             };
                         }
-                        return null; // Should not happen if roles are handled
+                        return null;
                     }).filter(Boolean);
 
                 // Add SYSTEM_PROMPT as the first message if the model supports it, or handle it differently.
@@ -238,8 +255,12 @@ function Index() {
 
             const messageHistory = [
                 { role: "system", content: SYSTEM_PROMPT },
-                ...currentMessages.filter(msg => !msg.error).map(m => {
+                ...currentMessagesParam.filter(msg => !msg.error).map(m => { // Use parameter
                     let msg = { role: m.role, content: m.content, tool_calls: m.tool_calls, tool_call_id: m.tool_call_id };
+                    // Ensure file information is handled appropriately for OpenAI if needed
+                    // OpenAI typically doesn't handle files directly in message content like Gemini Vision
+                    // It relies on text descriptions or URLs if vision model is used.
+                    // For this refactor, we assume msg.content already contains any file-related text.
                     if (!msg.tool_calls) delete msg.tool_calls;
                     if (!msg.tool_call_id) delete msg.tool_call_id;
                     return msg;
