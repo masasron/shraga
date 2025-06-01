@@ -15,7 +15,7 @@ import OnboardingDialog from "components/OnboardingDialog";
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import LLMStreamingHandler from 'utils/LLMStreamingHandler';
 import { Settings2, Edit, Download, Github } from "lucide-react";
-import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS, convertSchemaTypesToUpper } from 'utils/common';
+import { MODELS, SYSTEM_PROMPT, MODEL_TOOLS, prepareSchemaForGemini } from 'utils/common';
 import ChatLayout, { ChatContainer } from 'components/ChatLayout';
 import exportAsJuptyerNotebook from 'utils/exportAsJuptyerNotebook';
 
@@ -207,10 +207,10 @@ function Index() {
                 // For simplicity, we are omitting direct system prompt in history for Gemini for now.
                 // It can be added if testing shows it's supported and effective.
 
-                const geminiTools = MODEL_TOOLS.map(tool => ({
-                    name: tool.function.name, // Adjusted to match MODEL_TOOLS structure
-                    description: tool.function.description,
-                    parameters: tool.function.parameters ? convertSchemaTypesToUpper(tool.function.parameters) : undefined
+                const geminiTools = MODEL_TOOLS.map(toolDef => ({
+                    name: toolDef.function.name,
+                    description: toolDef.function.description,
+                    parameters: toolDef.function.parameters ? prepareSchemaForGemini(toolDef.function.parameters) : undefined
                 }));
 
                 console.log("Gemini Request:", { contents: mappedGeminiMessages, tools: [{ functionDeclarations: geminiTools }], generationConfig, safetySettings });
