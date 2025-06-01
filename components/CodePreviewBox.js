@@ -1,7 +1,7 @@
 // components/CodePreviewBox.js
 import React, { useEffect, useRef } from 'react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneLight } from "react-syntax-highlighter/dist/cjs/styles/prism"; // Using cjs path as specified
 import cn from 'utils/cn';
 
 const CodePreviewBox = ({ codeContent, isStreaming }) => {
@@ -31,7 +31,7 @@ const CodePreviewBox = ({ codeContent, isStreaming }) => {
             >
                 <SyntaxHighlighter
                     language="python"
-                    style={tomorrow}
+                    style={oneLight}
                     className="text-sm h-full" // Ensure it fills height for scrolling, and apply text-sm
                     customStyle={{ margin: 0, padding: "0.5rem" }} // Remove default margin, add padding
                     codeTagProps={{ style: { whiteSpace: 'pre-wrap', fontFamily: 'monospace' } }} // Ensure pre-wrap and monospace font

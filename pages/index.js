@@ -240,7 +240,7 @@ function Index() {
                     safetySettings
                 });
 
-                LLMStreamingHandler(streamResult.stream, onMessage, runTool, setStreamedMessage, setLoading, "gemini", setStreamedCodeContent, setShowCodePreview);
+                LLMStreamingHandler(streamResult.stream, onMessage, runTool, setStreamedMessage, setLoading, "gemini", setStreamedCodeContent, setShowCodePreview, loading);
 
             } catch (error) {
                 console.error("Error calling Gemini API:", error);
@@ -279,7 +279,7 @@ function Index() {
                 method: "POST",
                 payload: JSON.stringify(payload)
             });
-            LLMStreamingHandler(source, onMessage, runTool, setStreamedMessage, setLoading, "openai", setStreamedCodeContent, setShowCodePreview);
+            LLMStreamingHandler(source, onMessage, runTool, setStreamedMessage, setLoading, "openai", setStreamedCodeContent, setShowCodePreview, loading);
         }
         // No need to return updatedMessages if processMessages doesn't use setMessages' callback form
     }
