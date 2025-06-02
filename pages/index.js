@@ -8,7 +8,7 @@ import UserMessage from 'components/UserMessage';
 import LoadingText from 'components/LoadingText';
 import UserSettings from "components/UserSettings";
 import ChatTextField from 'components/ChatTextField';
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
 import parseToolsHistory from "utils/parseToolsHistory";
 import AssistantMessage from "components/AssistantMessage";
 import InteractiveChart from "components/InteractiveChart";
@@ -30,8 +30,10 @@ function Index() {
     const [isToolCallsStreaming, setIsToolCallsStreaming] = useState(false);
     const [streamedCodeContent, setStreamedCodeContent] = useState("");
     const [showCodePreview, setShowCodePreview] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
     const { isLoading, runPython, writeFile, readFile, deleteFile, resetGlobalContextState,
         pyodide, userSettings, setUserSettings, openInDrawer, messageFiles } = useContext(GlobalContext);
+    const dropdownRef = useRef(null);
 
     useEffect(function () {
         if (pyodide) {
@@ -474,6 +476,22 @@ function Index() {
         localStorage.setItem("onboarded", "1");
     }
 
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false);
+            }
+        }
+        if (dropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [dropdownOpen]);
+
     return <>
         {(isLoading || messages.length === 0) && <div className="fixed top-0 left-0 w-full h-full">
             <div className="flex h-full items-center justify-center">
@@ -488,10 +506,78 @@ function Index() {
             {showOnboarding && <OnboardingDialog onClose={handleOnboardingClose} />}
             <ChatLayout
                 header={<>
-                    <select value={userSettings.model} onChange={handleModelUpdate} className="p-2 font-bold text-md hover:bg-gray-100 transition-colors rounded-lg">
-                        {MODELS.filter(m => (m.provider || "openai") === (userSettings.provider || "openai"))
-                            .map(model => <option key={model.value} value={model.value}>{model.name}</option>)}
-                    </select>
+                    {/* Responsive: show custom dropdown on desktop, native select on mobile */}
+                    <div className="relative hidden sm:block" ref={dropdownRef}>
+                        <button
+                            className="p-2 font-bold text-md hover:bg-gray-100 transition-colors rounded-lg flex items-center min-w-[180px]"
+                            onClick={() => setDropdownOpen(v => !v)}
+                            type="button"
+                        >
+                            {(() => {
+                                const selectedModel = MODELS.find(m => m.value === userSettings.model);
+                                return selectedModel ? `${selectedModel.name} (${(selectedModel.provider ? selectedModel.provider.charAt(0).toUpperCase() + selectedModel.provider.slice(1).toLowerCase() : 'OpenAI')})` : 'Select Model';
+                            })()}
+                            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        {dropdownOpen && (
+                            <div className="absolute left-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-72 overflow-auto">
+                                {Object.entries(MODELS.reduce((acc, model) => {
+                                    const provider = model.provider || "openai";
+                                    if (!acc[provider]) acc[provider] = [];
+                                    acc[provider].push(model);
+                                    return acc;
+                                }, {})).map(([provider, models]) => (
+                                    <div key={provider}>
+                                        <div className="px-3 py-1 text-xs font-semibold text-gray-500 bg-gray-50 sticky top-0 z-10">{provider === 'openai' ? 'OpenAI' : provider.charAt(0).toUpperCase() + provider.slice(1)}</div>
+                                        {models.map(model => (
+                                            <button
+                                                key={model.value}
+                                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${userSettings.model === model.value ? 'bg-gray-100 font-bold' : ''}`}
+                                                onClick={() => {
+                                                    setUserSettings(oldSettings => ({
+                                                        ...oldSettings,
+                                                        model: model.value,
+                                                        provider: model.provider || "openai"
+                                                    }));
+                                                    setDropdownOpen(false);
+                                                }}
+                                            >
+                                                {model.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    {/* Native select for mobile */}
+                    <div className="block sm:hidden">
+                        <select
+                            value={userSettings.model}
+                            onChange={e => {
+                                const selectedModel = MODELS.find(m => m.value === e.target.value);
+                                setUserSettings(oldSettings => ({
+                                    ...oldSettings,
+                                    model: selectedModel.value,
+                                    provider: selectedModel.provider || "openai"
+                                }));
+                            }}
+                            className="p-2 font-bold text-md hover:bg-gray-100 transition-colors rounded-lg min-w-[180px]"
+                        >
+                            {Object.entries(MODELS.reduce((acc, model) => {
+                                const provider = model.provider || "openai";
+                                if (!acc[provider]) acc[provider] = [];
+                                acc[provider].push(model);
+                                return acc;
+                            }, {})).map(([provider, models]) => (
+                                <optgroup key={provider} label={provider === 'openai' ? 'OpenAI' : provider.charAt(0).toUpperCase() + provider.slice(1)}>
+                                    {models.map(model => (
+                                        <option key={model.value} value={model.value}>{model.name}</option>
+                                    ))}
+                                </optgroup>
+                            ))}
+                        </select>
+                    </div>
                     <div className="flex-1" />
                     {messages.length > 1 && <Tooltip content="Export as Jupyter Notebook" position="bottom">
                         <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => handleExport(messages)}>

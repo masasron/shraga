@@ -157,8 +157,10 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
                 }
 
                 const functionCallPart = payload.candidates?.[0]?.content?.parts?.find(part => part.functionCall);
+                console.log(payload);
                 if (functionCallPart?.functionCall) {
                     const geminiFc = functionCallPart.functionCall;
+                    console.log(geminiFc);
                     const toolCallId = `call_${Date.now()}_${toolCallIdCounter++}`;
                     const streamEvent = new CustomEvent("stream-tool-calls");
                     window.dispatchEvent(streamEvent);
@@ -167,8 +169,7 @@ export default function LLMStreamingHandler(sourceOrStreamUrl, onMessage, runToo
                         id: toolCallId, type: 'function',
                         function: { name: geminiFc.name, arguments: currentArguments }
                     });
-
-                    if (geminiFc.name === "python") {
+                    if (geminiFc.name === "run_python") {
                         if (setShowCodePreview) setShowCodePreview(true);
                         if (geminiFc.args && typeof geminiFc.args.code === 'string') {
                             if (setStreamedCodeContent) setStreamedCodeContent(geminiFc.args.code);
