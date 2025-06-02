@@ -1,14 +1,14 @@
 export const MODELS = [
     {
-        name: "gpt-4.1-mini",
+        name: "GPT 4.1 Mini",
         value: "gpt-4.1-mini"
     },
     {
-        name: "gpt-4.1-nano",
+        name: "GPT 4.1 Nano",
         value: "gpt-4.1-nano"
     },
     {
-        name: "gpt-4.1",
+        name: "GPT 4.1",
         value: "gpt-4.1"
     },
     {
@@ -16,15 +16,15 @@ export const MODELS = [
         value: "o3"
     },
     {
-        name: "o4-mini",
+        name: "o4 Mini",
         value: "o4-mini"
         // provider: "openai" // Assuming existing models without 'provider' are openai
     },
     // Gemini models are added below, placeholder removed.
     { name: "Gemini 2.0 Flash", value: "gemini-2.0-flash", provider: "gemini" },
-    { name: "Gemini 2.5 Flash Preview (05-20)", value: "gemini-2.5-flash-preview-05-20", provider: "gemini" },
+    { name: "Gemini 2.5 Flash Preview", value: "gemini-2.5-flash-preview-05-20", provider: "gemini" },
     { name: "Gemini 2.0 Flash Lite", value: "gemini-2.0-flash-lite", provider: "gemini" },
-    { name: "Gemini 2.5 Pro Preview (05-06)", value: "gemini-2.5-pro-preview-05-06", provider: "gemini" }
+    { name: "Gemini 2.5 Pro Preview", value: "gemini-2.5-pro-preview-05-06", provider: "gemini" }
 ];
 
 export const SYSTEM_PROMPT = `You are Shraga, an expert AI data analyst. You can help with visualizations and data analysis of files, images, etc in a browser-based Jupyter notebook using Python and libraries like matplotlib, pandas, and numpy.
